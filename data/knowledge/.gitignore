@@ -1,0 +1,3 @@
+# Local imported research materials stay out of source commits.
+*.json
+!robotics-demo.json

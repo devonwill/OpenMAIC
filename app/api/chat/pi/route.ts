@@ -1,3 +1,4 @@
+import { attachClassroomKnowledge } from '@/lib/knowledge/server';
 import { attachInteractiveState } from '@/lib/chat/pi/interactive-state-evidence';
 /**
  * Pi Director Chat API Endpoint
@@ -214,6 +215,8 @@ export async function POST(req: NextRequest) {
       const message = error instanceof Error ? error.message : 'Invalid Web Search configuration';
       return apiError('INVALID_REQUEST', 400, message);
     }
+
+    body.messages = await attachClassroomKnowledge(body.messages);
 
     log.info(
       `Pi request agents=${body.config.agentIds.join(', ')} messages=${body.messages.length} maxAgentTurns=${maxAgentTurns}`,

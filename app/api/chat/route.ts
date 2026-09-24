@@ -13,6 +13,7 @@
  */
 
 import { NextRequest } from 'next/server';
+import { attachClassroomKnowledge } from '@/lib/knowledge/server';
 import { statelessGenerate } from '@/lib/orchestration/stateless-generate';
 import { isProviderKeyRequired } from '@/lib/ai/providers';
 import type { StatelessChatRequest, StatelessEvent } from '@/lib/types/chat';
@@ -88,6 +89,8 @@ export async function POST(req: NextRequest) {
     log.info(
       `Agents: ${body.config.agentIds.join(', ')}, Messages: ${body.messages.length}, Turn: ${body.directorState?.turnCount ?? 0}`,
     );
+
+    body.messages = await attachClassroomKnowledge(body.messages);
 
     // Use the native request signal for abort propagation
     const signal = req.signal;

@@ -14,6 +14,7 @@
  */
 
 import { NextRequest } from 'next/server';
+import { getClassroomKnowledge } from '@/lib/knowledge/server';
 import { streamLLM } from '@/lib/ai/llm';
 import { buildPrompt, PROMPT_IDS } from '@/lib/prompts';
 import {
@@ -450,6 +451,8 @@ export async function POST(req: NextRequest) {
     if (!prompts) {
       return apiError('INTERNAL_ERROR', 500, 'Prompt template not found');
     }
+
+    prompts.user += await getClassroomKnowledge(requirements.requirement);
 
     log.info(
       `Generating outlines: "${requirements.requirement.substring(0, 50)}" [model=${modelString}]`,

@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
     '/*': [
       'lib/server/agent-runtime/import-pptx-worker.mjs',
       'skills/openmaic/**',
+      'data/knowledge/*.json',
       'skills/agent-runtime/**',
       // Loaded through a runtime-only `import('undici')` (see the LLM
       // dispatcher in lib/ai/providers.ts and the Google proxy transport), so

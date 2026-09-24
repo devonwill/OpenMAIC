@@ -1,3 +1,4 @@
+import { getClassroomKnowledge } from '@/lib/knowledge/server';
 /**
  * Scene Content Generation API
  *
@@ -117,6 +118,10 @@ export async function POST(req: NextRequest) {
     outlineTitle = rawOutline?.title;
     resolvedModelString = modelString;
 
+    const knowledgeEvidence = await getClassroomKnowledge(
+      [outline.title, outline.description, ...(outline.keyPoints ?? [])].join(' '),
+    );
+
     // Detect vision capability
     const hasVision = !!modelInfo?.capabilities?.vision;
 
@@ -134,6 +139,7 @@ export async function POST(req: NextRequest) {
       userPrompt: string,
       images?: Array<{ id: string; src: string }>,
     ): Promise<string> => {
+      userPrompt += knowledgeEvidence;
       if (images?.length && hasVision) {
         // Server-backed transport: `imageMapping` values are allocated asset
         // ids, so the image srcs reach here as ids. Resolve them to the same

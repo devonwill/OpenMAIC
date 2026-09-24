@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "id": "robotics-demo",
+  "title": "机器人学知识图谱（演示）",
+  "kind": "graph",
+  "reviewStatus": "demo",
+  "nodes": [
+    {
+      "id": "coordinate",
+      "name": "坐标变换",
+      "aliases": [
+        "coordinate transformation"
+      ],
+      "category": "机器人学基础",
+      "content": "在不同参考坐标系之间表示同一位置或姿态。演示条目，尚未经教师审核。",
+      "source": {
+        "title": "融合功能演示数据，非原系统真实图谱",
+        "locator": "coordinate"
+      }
+    },
+    {
+      "id": "forward",
+      "name": "正运动学",
+      "aliases": [
+        "forward kinematics",
+        "FK"
+      ],
+      "category": "机器人学基础",
+      "content": "从关节变量计算末端位姿。演示条目，尚未经教师审核。",
+      "source": {
+        "title": "融合功能演示数据，非原系统真实图谱",
+        "locator": "forward"
+      }
+    },
+    {
+      "id": "inverse",
+      "name": "逆运动学",
+      "aliases": [
+        "inverse kinematics",
+        "IK"
+      ],
+      "category": "机器人学基础",
+      "content": "从目标末端位姿求满足条件的关节变量，可能存在多解或无解。演示条目，尚未经教师审核。",
+      "source": {
+        "title": "融合功能演示数据，非原系统真实图谱",
+        "locator": "inverse"
+      }
+    },
+    {
+      "id": "jacobian",
+      "name": "雅可比矩阵",
+      "aliases": [
+        "Jacobian"
+      ],
+      "category": "机器人学基础",
+      "content": "描述关节速度与末端速度之间的局部关系。演示条目，尚未经教师审核。",
+      "source": {
+        "title": "融合功能演示数据，非原系统真实图谱",
+        "locator": "jacobian"
+      }
+    }
+  ],
+  "links": [
+    {
+      "source": "coordinate",
+      "target": "forward",
+      "relation": "相关知识"
+    },
+    {
+      "source": "forward",
+      "target": "inverse",
+      "relation": "相关知识"
+    },
+    {
+      "source": "jacobian",
+      "target": "inverse",
+      "relation": "相关知识"
+    }
+  ]
+}
