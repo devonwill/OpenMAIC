@@ -40,6 +40,9 @@ CLAUDE.local.md
 .DS_Store
 *.pem
 
+# TRAE 沙箱/pnpm 安装中断遗留的临时文件（EXDEV 失败残留，不入库）
+_tmp_*
+
 # debug
 npm-debug.log*
 yarn-debug.log*
@@ -71,6 +74,9 @@ next-env.d.ts
 # generated data
 /data
 /logs
+
+# unit logos (internal use only, do not commit to public repos)
+/public/unit-logos/
 
 # docs
 /docs
