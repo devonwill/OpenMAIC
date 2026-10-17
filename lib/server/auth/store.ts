@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import type { Queryable } from '@openmaic/storage/document/pg';
 
 // 主应用内的 auth 存储（与 owner-materials.ts 同模式）：不动 @openmaic/storage
@@ -10,6 +11,10 @@ import type { Queryable } from '@openmaic/storage/document/pg';
 // @openmaic/storage runtime/pg.ts 的 ensureSchema 同样安全。
 
 export type UserRole = 'teacher' | 'student';
+
+// 会话有效期 30 天：与 touchSession 的滑动续期窗口（interval '30 days'）保持同一口径，
+// cookie maxAge 也复用该常量，避免“行还活着但 cookie 先过期”（或反过来）的两套时钟。
+export const SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
 
 export interface UserRecord {
   id: string;
@@ -103,6 +108,16 @@ export async function createUser(
   }
 }
 
+/** 管理员重置密码用（scripts/reset-password.ts）：只改哈希，会话吊销由调用方负责。 */
+export async function updateUserPassword(
+  queryable: Queryable, userId: string, passwordHash: string,
+): Promise<void> {
+  await queryable.query(
+    `UPDATE users SET password_hash = $2, updated_at = now() WHERE id = $1`,
+    [userId, passwordHash],
+  );
+}
+
 export async function getUserByEmail(
   queryable: Queryable, email: string,
 ): Promise<UserRecord | null> {
@@ -121,6 +136,19 @@ export async function updateUserProfile(
     `UPDATE users SET display_name = $2, phone = $3, updated_at = now() WHERE id = $1`,
     [userId, patch.displayName, patch.phone],
   );
+}
+
+/** 新建会话行；token 由调用方用 HMAC 签名后写 cookie，库中只存 sessionId。 */
+export async function createSession(
+  queryable: Queryable, userId: string,
+): Promise<{ id: string; expiresAt: Date }> {
+  const id = randomUUID();
+  const expiresAt = new Date(Date.now() + SESSION_MAX_AGE_SECONDS * 1000);
+  await queryable.query(
+    `INSERT INTO user_sessions (id, user_id, expires_at) VALUES ($1, $2, $3)`,
+    [id, userId, expiresAt],
+  );
+  return { id, expiresAt };
 }
 
 /** 会话 + 用户一次 JOIN 取回；过期/不存在返回 null。 */
