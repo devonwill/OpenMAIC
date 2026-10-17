@@ -19,6 +19,11 @@ describe('embedded persistence route', () => {
     vi.doMock('@/lib/persistence/owner-materials', () => ({
       ensureOwnerMaterialSchema: vi.fn().mockResolvedValue(undefined),
     }));
+    // auth 表的真实建表由 tests/auth/store.test.ts（PGlite）覆盖；这里与
+    // owner-materials/stage-meta 同等待遇 no-op，避免在 fake pool 上跑 DDL。
+    vi.doMock('@/lib/server/auth/store', () => ({
+      ensureAuthSchema: vi.fn().mockResolvedValue(undefined),
+    }));
   });
 
   it('returns a clear 404 when DATABASE_URL is unset', async () => {

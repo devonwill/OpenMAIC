@@ -1,7 +1,13 @@
-import { splitSqlStatements, type Queryable } from '@openmaic/storage/document/pg';
+import type { Queryable } from '@openmaic/storage/document/pg';
 
 // 主应用内的 auth 存储（与 owner-materials.ts 同模式）：不动 @openmaic/storage
 // 包的导出面，幂等建表由 server-provider 初始化时调用。
+//
+// Queryable 只作类型导入（编译期擦除）：部分测试（tests/persistence/route.test.ts）
+// 会对 @openmaic/storage/document/pg 做模块级 mock，若这里还运行时导入
+// splitSqlStatements，mock 环境下会因导出缺失而让 provider 初始化失败。
+// AUTH_PG_SCHEMA 不含 SQL 字符串字面量内的分号，简单 split 与
+// @openmaic/storage runtime/pg.ts 的 ensureSchema 同样安全。
 
 export type UserRole = 'teacher' | 'student';
 
@@ -57,8 +63,9 @@ CREATE TABLE IF NOT EXISTS teacher_model_configs (
 `;
 
 export async function ensureAuthSchema(queryable: Queryable): Promise<void> {
-  for (const sql of splitSqlStatements(AUTH_PG_SCHEMA)) {
-    await queryable.query(sql);
+  for (const sql of AUTH_PG_SCHEMA.split(';')) {
+    const statement = sql.trim();
+    if (statement !== '') await queryable.query(statement);
   }
 }
 
