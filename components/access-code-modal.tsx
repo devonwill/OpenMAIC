@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'motion/react';
 import { useI18n } from '@/lib/hooks/use-i18n';
 import { ArrowRight, ShieldCheck, LoaderCircle } from 'lucide-react';
@@ -188,6 +189,16 @@ export function AccessCodeModal({ open, onSuccess }: AccessCodeModalProps) {
                     </motion.p>
                   )}
                 </AnimatePresence>
+
+                {/* 注册引导：已登录可免访问码并跨设备同步（双轨入口，i18n key 由 Task 10 补齐） */}
+                <p className="mt-3 text-center text-xs text-gray-500 dark:text-gray-400">
+                  <Link
+                    href="/auth"
+                    className="underline hover:text-gray-700 dark:hover:text-gray-300"
+                  >
+                    {t('auth.registerFromAccessCode')}
+                  </Link>
+                </p>
               </motion.form>
             </div>
           </motion.div>

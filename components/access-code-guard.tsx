@@ -3,8 +3,11 @@
 import { useEffect, useState, ReactNode } from 'react';
 import { AccessCodeModal } from '@/components/access-code-modal';
 import { useSettingsStore } from '@/lib/store/settings';
+import { useAuth } from '@/lib/hooks/use-auth';
 
 export function AccessCodeGuard({ children }: { children: ReactNode }) {
+  // 登录态来自 AuthProvider 的 /api/auth/me：已登录用户免访问码（双轨：spec Q6）。
+  const { user, loading: authLoading } = useAuth();
   const [status, setStatus] = useState<{
     enabled: boolean;
     authenticated: boolean;
@@ -35,7 +38,11 @@ export function AccessCodeGuard({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const needsAuth = !status.loading && status.enabled && !status.authenticated;
+  // 已登录用户免访问码（双轨：spec Q6）。
+  // authLoading 期间一律不弹：/api/auth/me 未返回前 user 恒为 null，
+  // 若此时弹出，已登录用户会先闪一下访问码弹窗再消失。
+  const needsAuth =
+    !authLoading && !status.loading && status.enabled && !status.authenticated && !user;
 
   return (
     <>

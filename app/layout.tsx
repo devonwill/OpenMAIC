@@ -7,6 +7,7 @@ import 'animate.css';
 import 'katex/dist/katex.min.css';
 import { ThemeProvider } from '@/lib/hooks/use-theme';
 import { I18nProvider } from '@/lib/hooks/use-i18n';
+import { AuthProvider } from '@/lib/hooks/use-auth';
 import { Toaster } from '@/components/ui/sonner';
 import { ServerProvidersInit } from '@/components/server-providers-init';
 import { StorageHealthNotice } from '@/components/storage-health-notice';
@@ -47,14 +48,18 @@ export default function RootLayout({
       >
         <ThemeProvider>
           <I18nProvider>
-            <ServerProvidersInit />
-            <ProSwapWatcher />
-            <AccessCodeGuard>{children}</AccessCodeGuard>
-            <Toaster position="top-center" />
-            {/* After the Toaster: this one raises a toast on mount when
-                persistence is already broken, and a toast raised before its
-                host exists has nowhere to go. */}
-            <StorageHealthNotice />
+            {/* 登录态提供者包在最外层：访问码守卫要读 user 判断免访问码（双轨），
+                Task 10/11 的用户菜单、教师配置同步也挂在这一层。 */}
+            <AuthProvider>
+              <ServerProvidersInit />
+              <ProSwapWatcher />
+              <AccessCodeGuard>{children}</AccessCodeGuard>
+              <Toaster position="top-center" />
+              {/* After the Toaster: this one raises a toast on mount when
+                  persistence is already broken, and a toast raised before its
+                  host exists has nowhere to go. */}
+              <StorageHealthNotice />
+            </AuthProvider>
           </I18nProvider>
         </ThemeProvider>
       </body>
