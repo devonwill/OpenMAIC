@@ -14,6 +14,7 @@ import { isAgentRuntimeConfigured } from '@/lib/config/feature-flags';
 import { subscribeAgentEventWakeup } from '@/lib/server/agent-runtime/event-notify-bus';
 import { resolveRequestOwnerId } from '@/lib/server/agent-runtime/owner';
 import { getAgentSessionStore } from '@/lib/server/agent-runtime/store';
+import { resolveAuthenticatedOwnerId } from '@/lib/server/auth/identity';
 
 export const runtime = 'nodejs';
 // Self-hosted `next start` ignores maxDuration; Vercel's adapter can still use
@@ -41,12 +42,8 @@ export async function GET(req: NextRequest) {
 
   // Identity belongs to the request, not the URL. EventSource reconnects to
   // this same stable path with the anonymous cookie minted on first attach.
-  // This slice resolves only the anonymous cookie identity; a future auth
-  // integration must thread `authenticatedOwnerId` through here, or sessions
-  // created under authenticated identities would be unreachable by their own
-  // owner.
   const responseHeaders = new Headers();
-  const ownerId = resolveRequestOwnerId(req, responseHeaders);
+  const ownerId = resolveRequestOwnerId(req, responseHeaders, await resolveAuthenticatedOwnerId(req));
   const store = await getAgentSessionStore();
 
   const url = new URL(req.url);

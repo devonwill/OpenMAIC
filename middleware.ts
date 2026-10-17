@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { isAgentRuntimeConfigured, isProWorkbenchEnabled } from '@/lib/config/feature-flags';
 import { verifyAccessTokenEdge } from '@/lib/server/access-token-edge';
+import { verifySessionTokenEdge } from '@/lib/server/auth/session-token-edge';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -22,8 +23,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Whitelist: access-code endpoints, health check
-  if (pathname.startsWith('/api/access-code/') || pathname === '/api/health') {
+  // Whitelist: access-code endpoints, auth endpoints (register/login/logout must
+  // be reachable before the access code is known), health check
+  if (
+    pathname.startsWith('/api/access-code/') ||
+    pathname.startsWith('/api/auth/') ||
+    pathname === '/api/health'
+  ) {
     return NextResponse.next();
   }
 
@@ -31,6 +37,17 @@ export async function middleware(request: NextRequest) {
   const cookie = request.cookies.get('openmaic_access');
   if (cookie?.value && (await verifyAccessTokenEdge(cookie.value, accessCode))) {
     return NextResponse.next();
+  }
+
+  // Logged-in users bypass the access code: their session cookie is signed
+  // with SESSION_SECRET, verified here in Edge (revocation is checked by the
+  // Node API layer, which can query the database).
+  const sessionSecret = process.env.SESSION_SECRET;
+  if (sessionSecret) {
+    const sessionCookie = request.cookies.get('openmaic_session');
+    if (sessionCookie?.value && (await verifySessionTokenEdge(sessionCookie.value, sessionSecret))) {
+      return NextResponse.next();
+    }
   }
 
   // API requests without valid cookie → 401
