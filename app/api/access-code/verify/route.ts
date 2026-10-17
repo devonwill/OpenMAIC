@@ -6,6 +6,7 @@ import { createAccessToken } from '@/lib/server/access-token';
 import { accessCodeAttemptLimiter } from '@/lib/server/attempt-limiter';
 import { clientIdentity, isTrustedProxyIdentity } from '@/lib/server/client-identity';
 import { warnIfAccessCodeIsShort } from '@/lib/server/access-code-warning';
+import { anonymousCookieSecure } from '@/lib/server/agent-runtime/owner';
 
 /**
  * Pull the candidate code out of an already-parsed JSON body. Anything that is
@@ -73,7 +74,9 @@ export async function POST(request: Request) {
     sameSite: 'lax',
     path: '/',
     maxAge: ACCESS_TOKEN_MAX_AGE_SECONDS,
-    secure: process.env.NODE_ENV === 'production',
+    // 与匿名 owner Cookie 同一开关：plain-HTTP 部署（COOKIE_SECURE=0）时浏览器
+    // 会拒绝存储 Secure Cookie，导致登录“看似成功”但后续所有 API 均 401。
+    secure: anonymousCookieSecure(),
   });
 
   return apiSuccess({ valid: true });
