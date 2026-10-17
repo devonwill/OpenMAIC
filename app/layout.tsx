@@ -10,6 +10,7 @@ import { I18nProvider } from '@/lib/hooks/use-i18n';
 import { AuthProvider } from '@/lib/hooks/use-auth';
 import { Toaster } from '@/components/ui/sonner';
 import { ServerProvidersInit } from '@/components/server-providers-init';
+import { TeacherConfigSync } from '@/components/auth/teacher-config-sync';
 import { StorageHealthNotice } from '@/components/storage-health-notice';
 import { AccessCodeGuard } from '@/components/access-code-guard';
 import { ProSwapWatcher } from '@/components/workbench/ProSwapWatcher';
@@ -52,6 +53,7 @@ export default function RootLayout({
                 Task 10/11 的用户菜单、教师配置同步也挂在这一层。 */}
             <AuthProvider>
               <ServerProvidersInit />
+              <TeacherConfigSync />
               <ProSwapWatcher />
               <AccessCodeGuard>{children}</AccessCodeGuard>
               <Toaster position="top-center" />
