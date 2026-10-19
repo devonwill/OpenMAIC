@@ -45,7 +45,10 @@
   },
   "home": {
     "slogan": "Học tập sinh tạo trong lớp học tương tác đa tác nhân",
-    "greetingWithName": "Chào {{name}}"
+    "greetingWithName": "Chào {{name}}",
+    "setupLLMFirst": "Please configure a large-model provider in System Settings before using {{feature}}.",
+    "workbenchEntry": "Workbench",
+    "enterClassroom": "classroom generation"
   },
   "toolbar": {
     "pdfParser": "Bộ đọc PDF",
@@ -563,6 +566,8 @@
       "title": "Kịch bản lời giảng",
       "regenAllTts": "Tạo lại toàn bộ giọng đọc",
       "voiceAll": "Lồng tiếng tất cả",
+      "cloneVoiceSelect": "Chọn giọng sao chép, bấm “Lồng tiếng tất cả” để lồng lại toàn bộ câu",
+      "cloneVoiceDefault": "Giọng mặc định",
       "counts": "{{speech}} lời giảng · {{cue}} hiệu ứng",
       "panLeft": "Trượt sang trái",
       "panRight": "Trượt sang phải",
@@ -1167,6 +1172,12 @@
     "webSearching": "Tìm trên web",
     "webSearchingDesc": "Đang tìm trên web để lấy thông tin mới nhất",
     "webSearchFailed": "Tìm trên web không thành công",
+    "citationsTitle": "Nguồn tham khảo trang này",
+    "citationsValid": "{{count}} đã xác minh",
+    "citationsInvalid": "{{count}} không hợp lệ",
+    "citationReasonNotFound": "Không tìm thấy trong cơ sở tri thức (có thể do mô hình bịa ra)",
+    "citationReasonNotReviewed": "Thư viện nguồn chưa được duyệt",
+    "citationReasonOutOfScope": "Ngoài phạm vi các thư viện đã chọn",
     "outlinesReadyCount": "{{ready}} / {{total}} phần đã xong",
     "jumpToBlankTitle": "Nhảy tới phần còn thiếu tên",
     "analyzingMediaMaterial": "Đang phân tích âm thanh/video"
@@ -1905,7 +1916,7 @@
       "download": "Tải xuống",
       "detailFailed": "Không thể tải chi tiết skill",
       "contentLabel": "Nội dung",
-      "builtinDetailNote": "Skill này đi kèm với OpenMAIC. Tải xuống để nhập vào không gian làm việc của agent khác.",
+      "builtinDetailNote": "Skill này đi kèm với OpenRobotics. Tải xuống để nhập vào không gian làm việc của agent khác.",
       "upload": "Tải lên",
       "uploading": "Đang tải lên…",
       "uploadFailed": "Không thể tải skill lên. Hãy kiểm tra tệp và thử lại.",
@@ -2062,7 +2073,26 @@
     "badgeEnter": "Chế độ Pro",
     "badgeExit": "Quay lại chế độ cổ điển",
     "launchPlaceholder": "Mô tả trải nghiệm học tập bạn muốn tạo",
-    "launchSend": "Bắt đầu tạo"
+    "launchSend": "Bắt đầu tạo",
+    "config": "Cấu hình nhanh",
+    "configModel": "Mô hình",
+    "configModelScope": "Áp dụng cho tạo cảnh, phiên trò chuyện và bài trắc nghiệm; mô hình phản hồi của bảng làm việc cố định phía máy chủ.",
+    "configNoModelProvider": "Chưa có nhà cung cấp mô hình nào được cấu hình — hãy thêm trong Cài đặt.",
+    "configVoice": "Giọng nói",
+    "knowledge": "Kho kiến thức",
+    "knowledgeLoading": "Đang tải…",
+    "knowledgeLoadFailed": "Tải thất bại — hãy bật dữ liệu tại trang Kiến thức trước.",
+    "knowledgeEmpty": "Chưa có kho kiến thức đã duyệt — hãy tải lên và duyệt tại trang Kiến thức.",
+    "knowledgeKindCode": "Mã",
+    "knowledgeKindGraph": "Đồ thị",
+    "knowledgeKindPaper": "Bài báo",
+    "knowledgeQuota": "Hạn mức trích dẫn (tỷ trọng bằng chứng)",
+    "knowledgeQuotaSummary": "Nội bộ {{local}}% · Trực tuyến {{web}}% · Mô hình {{model}}%",
+    "knowledgeQuotaLocal": "Nội bộ",
+    "knowledgeQuotaWeb": "Trực tuyến",
+    "configCloneUse": "Dùng giọng sao chép của tôi cho mọi giáo viên AI",
+    "configCloneSelect": "Chọn giọng sao chép",
+    "configCloneEmpty": "Chưa đăng ký giọng sao chép — hãy đăng ký trước trong cài đặt giọng nói"
   },
   "workbench": {
     "tool": {

@@ -1,3 +1,9 @@
+/**
+ * 本文件：只读/放映态线段元素组件，可选描边绘制动画。
+ * 职责：静态绘制线段；animate=true 时用 stroke-dashoffset 实现“一笔画出”
+ *       入场动画，动画结束后恢复原虚线样式并显示端点标记。
+ * 关键点：零长度路径跳过动画；动画期间隐藏端点标记避免首帧闪现。
+ */
 'use client';
 
 import { useMemo, useRef, useState, useEffect, useId } from 'react';

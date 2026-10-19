@@ -1,3 +1,11 @@
+/**
+ * 本文件：播放模式外壳根组件。
+ * 职责：持有播放引擎（PlaybackEngine）、圆桌讨论 SSE、TTS、场景翻页与
+ * 元素引用拾取的全部状态，组装 Header/Sidebar/Canvas/Roundtable/ChatArea。
+ * 关键点：切换模式前父级通过 ref.teardown() 同步停掉 SSE/引擎/TTS；
+ * 续播位点按「场景级 resume 位点 + 阶段级 cursor」双写、卸载时防抖落盘；
+ * 场景切换用单调 epoch 与请求序号丢弃过期异步回调。
+ */
 'use client';
 
 import {
@@ -115,6 +123,7 @@ interface PlaybackChromeRootProps {
  * `Header` calls `onEnterProMode`; the parent `Stage` is responsible
  * for calling `ref.teardown()` before unmounting this root so SSE and
  * the engine wind down cleanly.
+ * 播放态外壳根：管理引擎生命周期、续播恢复与讨论会话清理。
  */
 export const PlaybackChromeRoot = forwardRef<PlaybackChromeRootHandle, PlaybackChromeRootProps>(
   function PlaybackChromeRoot(
@@ -360,6 +369,8 @@ export const PlaybackChromeRoot = forwardRef<PlaybackChromeRootHandle, PlaybackC
     );
 
     const saveSceneResumePosition = useCallback(
+      // 续播位点写入策略：索引越界或该位点前越过不可安全重放的动作则清除，
+      // 否则仅在可从头重建的前缀内保存（保证恢复时能确定性重放）。
       (sceneId: string | null | undefined, actionIndex: number | null | undefined) => {
         if (!sceneId || typeof window === 'undefined') return;
         const scene = scenes.find((s) => s.id === sceneId);
@@ -1105,6 +1116,8 @@ export const PlaybackChromeRoot = forwardRef<PlaybackChromeRootHandle, PlaybackC
      * Returns true if the switch was immediate, false if gated (dialog shown).
      */
     const gatedSceneSwitch = useCallback(
+      // 请求号递增：异步等待会话结束后若已有更新的切换请求，则放弃本次切换，
+      // 防止快速连续翻页时旧请求覆盖新目标。
       async (targetSceneId: string): Promise<boolean> => {
         const requestId = ++sceneSwitchRequestRef.current;
         if (targetSceneId === currentSceneId) {

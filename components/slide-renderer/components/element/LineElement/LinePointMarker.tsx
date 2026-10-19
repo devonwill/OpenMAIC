@@ -1,3 +1,9 @@
+/**
+ * 本文件：线段端点 SVG marker 定义（箭头/圆点）。
+ * 职责：按端点类型与线宽生成 <marker>，随路径自动定向（orient="auto"）。
+ * 关键点：marker 尺寸随线宽缩放，最小线宽按 2 计算防止标记不可见；
+ *         箭头在起点需旋转 180° 才指向正确方向。
+ */
 import type { LinePoint } from '@openmaic/dsl';
 
 type NonEmptyLinePoint = Exclude<LinePoint, ''>;
@@ -20,6 +26,7 @@ const rotateMap: Record<string, number> = {
   'arrow-end': 0,
 };
 
+/** 生成箭头/圆点端点 marker；id 由调用方拼接元素 id 保证同页唯一。 */
 export function LinePointMarker({ id, position, type, baseSize, color }: LinePointMarkerProps) {
   const path = pathMap[type];
   const rotate = rotateMap[`${type}-${position}`] || 0;

@@ -7,6 +7,7 @@ import type {
   ImageMapping,
   SessionDocumentSource,
 } from '@/lib/types/generation';
+import type { KnowledgeSelection } from '@/lib/knowledge/quota';
 
 // Session state stored in sessionStorage
 export interface GenerationSessionState {
@@ -40,6 +41,8 @@ export interface GenerationSessionState {
   courseTitle?: string;
   // Server-effective vocational mode from the outline generation done event.
   taskEngineMode?: boolean;
+  /** 图2 chosen 知识库 + three-route citation quota (saved by the home composer). */
+  knowledge?: KnowledgeSelection;
 }
 
 export type GenerationStep = {

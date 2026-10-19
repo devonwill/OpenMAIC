@@ -1,3 +1,8 @@
+/**
+ * 本文件：图片椭圆描边组件。
+ * 职责：按元素宽高绘制内切 SVG 椭圆描边，无描边配置时不渲染。
+ * 关键点：non-scaling-stroke 保证缩放时线宽恒定。
+ */
 'use client';
 
 import type { PPTElementOutline } from '@openmaic/dsl';

@@ -362,6 +362,58 @@ export async function finalizeOwnerMaterial(
   return rowToRecord(result.rows[0]);
 }
 
+/**
+ * 重命名 owner 库素材的展示名。
+ *
+ * 未命中（不存在 / 非本 owner / 已删）返回 null，让路由与「不存在」统一答
+ * 404 —— 不区分「从没存在」和「别人的」，避免存在性探测（no existence oracle）。
+ * 返回转换后的 {@link OwnerMaterialRecord} 而非裸行：模块外不感知 snake_case
+ * 列名（RawOwnerMaterialRow 未导出），与 finalizeOwnerMaterial 的返回一致。
+ */
+export async function renameOwnerMaterial(
+  queryable: Queryable,
+  ownerId: string,
+  materialId: string,
+  originalName: string,
+): Promise<OwnerMaterialRecord | null> {
+  const result = await queryable.query<RawOwnerMaterialRow>(
+    `UPDATE owner_material
+        SET original_name = $3
+      WHERE owner_id = $1
+        AND id = $2
+        AND deleted_at IS NULL
+      RETURNING ${OWNER_MATERIAL_COLUMNS}`,
+    [ownerId, materialId, originalName],
+  );
+  const row = result.rows[0];
+  return row ? rowToRecord(row) : null;
+}
+
+/**
+ * 软删 owner 库素材，返回被删行（含 oss_key，供路由尽力清理字节）。
+ *
+ * 未命中返回 null（同 rename 的 404 语义）。deleted_at 是 DOUBLE PRECISION
+ * 的 epoch 毫秒（见 OWNER_MATERIAL_SCHEMA），SQL now() 返回 timestamptz 无法
+ * 隐式转换，故与 created_at 一样参数化传入 Date.now()。
+ */
+export async function deleteOwnerMaterial(
+  queryable: Queryable,
+  ownerId: string,
+  materialId: string,
+): Promise<OwnerMaterialRecord | null> {
+  const result = await queryable.query<RawOwnerMaterialRow>(
+    `UPDATE owner_material
+        SET deleted_at = $3
+      WHERE owner_id = $1
+        AND id = $2
+        AND deleted_at IS NULL
+      RETURNING ${OWNER_MATERIAL_COLUMNS}`,
+    [ownerId, materialId, Date.now()],
+  );
+  const row = result.rows[0];
+  return row ? rowToRecord(row) : null;
+}
+
 /** Remove a failed reservation; crash leftovers are handled by the 24h lazy sweep. */
 export async function abandonOwnerMaterial(
   queryable: Queryable,

@@ -366,7 +366,8 @@ function CodeLineRow({
 // ==================== BaseCodeElement ====================
 
 export function BaseCodeElement({ elementInfo, animate }: BaseCodeElementProps) {
-  const { language, lines, fileName, showLineNumbers = true, fontSize = 14 } = elementInfo;
+  // 代码默认字号 16px：与生成规范「特殊场景 16px」档位保持一致
+  const { language, lines, fileName, showLineNumbers = true, fontSize = 16 } = elementInfo;
   const wrapperRef = useRef<HTMLDivElement>(null);
   const codeBodyRef = useRef<HTMLDivElement>(null);
 

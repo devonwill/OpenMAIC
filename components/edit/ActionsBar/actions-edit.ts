@@ -1,3 +1,11 @@
+/**
+ * 本文件：场景 actions 列表的纯函数编辑操作集。
+ * 职责：提供增删改排序、元素绑定、音频标记等不可变更新函数，
+ * 时间轴 UI 的全部编辑经由这些函数完成后再整体持久化到 store。
+ * 关键点：讨论动作至多一个且必须居末；提供按 id 操作的变体以规避
+ * 异步回调中下标过期的问题；改台词即失效已缓存的配音。
+ */
+
 import type { Action } from '@/lib/types/action';
 
 /**
@@ -82,6 +90,8 @@ export function removeAt(actions: Action[], index: number): Action[] {
  */
 export function move(actions: Action[], from: number, to: number): Action[] {
   if (from < 0 || from >= actions.length) return actions;
+  // to 是原数组的 n+1 个间隙位之一；先移除再插入时前移的目标需减 1，
+  // 否则会多跳一格（to === from / from+1 的恒等情形在下一行直接返回）。
   if (to === from || to === from + 1) return actions;
   const next = actions.slice();
   const [item] = next.splice(from, 1);

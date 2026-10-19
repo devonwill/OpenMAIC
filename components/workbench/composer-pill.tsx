@@ -19,7 +19,7 @@
  * danger = this one failed). The remove affordance stays at low contrast until
  * the pill is hovered — a row of six bright ✕ glyphs is the loudest thing on a
  * surface whose loudest thing should be the send button.
- */
+  */
 import { Loader2, X } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils/cn';
@@ -34,7 +34,7 @@ export type ComposerPillTone = 'neutral' | 'accent' | 'ref' | 'pending' | 'dange
 const TONE: Record<ComposerPillTone, string> = {
   neutral: 'border-border bg-muted/50 text-foreground/85',
   accent: 'border-primary/30 bg-primary/[0.08] text-primary',
-  ref: 'border-violet-400/45 bg-violet-500/[0.08] text-violet-700 dark:border-violet-400/40 dark:text-violet-300',
+  ref: 'border-blue-400/45 bg-blue-500/[0.08] text-blue-700 dark:border-blue-400/40 dark:text-blue-300',
   pending: 'border-border/70 bg-transparent text-muted-foreground',
   danger: 'border-destructive/40 bg-destructive/10 text-destructive',
 };
@@ -42,7 +42,7 @@ const TONE: Record<ComposerPillTone, string> = {
 const REMOVE_TONE: Record<ComposerPillTone, string> = {
   neutral: 'hover:bg-foreground/10',
   accent: 'hover:bg-primary/15',
-  ref: 'hover:bg-violet-500/15',
+  ref: 'hover:bg-blue-500/15',
   pending: 'hover:bg-foreground/10',
   danger: 'hover:bg-destructive/15',
 };
@@ -51,7 +51,7 @@ const REMOVE_TONE: Record<ComposerPillTone, string> = {
 const ORDINAL_TONE: Record<ComposerPillTone, string> = {
   neutral: 'bg-foreground/10',
   accent: 'bg-primary/15',
-  ref: 'bg-violet-500/18',
+  ref: 'bg-blue-500/18',
   pending: 'bg-foreground/10',
   danger: 'bg-destructive/15',
 };

@@ -627,7 +627,7 @@ renderer only ever shrinks. Size the box to the formula.
 | `lines`          | `{ id, content }[]`   | —       | One entry per line, **no trailing newlines**               |
 | `fileName`       | string                | none    | A small title above the code                              |
 | `showLineNumbers`| boolean               | `true`  | Gutter numbers                                            |
-| `fontSize`       | number (px)           | `14`    | Code font size                                            |
+| `fontSize`       | number (px)           | `16`    | Code font size                                            |
 
 Words live in **`lines[].content`**, one path per line —
 `/content/canvas/elements/9/lines/1/content` — which leaves every other line's `id`

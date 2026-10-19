@@ -1,9 +1,9 @@
 {
-  "version": 1,
+  "version": 2,
   "id": "robotics-demo",
-  "title": "机器人学知识图谱（演示）",
+  "title": "机器人学知识图谱",
   "kind": "graph",
-  "reviewStatus": "demo",
+  "reviewStatus": "reviewed",
   "nodes": [
     {
       "id": "coordinate",
@@ -13,6 +13,11 @@
       ],
       "category": "机器人学基础",
       "content": "在不同参考坐标系之间表示同一位置或姿态。演示条目，尚未经教师审核。",
+      "nodeType": "concept",
+      "documentIds": [
+        "doc_legacy"
+      ],
+      "attributes": {},
       "source": {
         "title": "融合功能演示数据，非原系统真实图谱",
         "locator": "coordinate"
@@ -27,6 +32,11 @@
       ],
       "category": "机器人学基础",
       "content": "从关节变量计算末端位姿。演示条目，尚未经教师审核。",
+      "nodeType": "concept",
+      "documentIds": [
+        "doc_legacy"
+      ],
+      "attributes": {},
       "source": {
         "title": "融合功能演示数据，非原系统真实图谱",
         "locator": "forward"
@@ -41,6 +51,11 @@
       ],
       "category": "机器人学基础",
       "content": "从目标末端位姿求满足条件的关节变量，可能存在多解或无解。演示条目，尚未经教师审核。",
+      "nodeType": "concept",
+      "documentIds": [
+        "doc_legacy"
+      ],
+      "attributes": {},
       "source": {
         "title": "融合功能演示数据，非原系统真实图谱",
         "locator": "inverse"
@@ -54,6 +69,11 @@
       ],
       "category": "机器人学基础",
       "content": "描述关节速度与末端速度之间的局部关系。演示条目，尚未经教师审核。",
+      "nodeType": "concept",
+      "documentIds": [
+        "doc_legacy"
+      ],
+      "attributes": {},
       "source": {
         "title": "融合功能演示数据，非原系统真实图谱",
         "locator": "jacobian"
@@ -76,5 +96,20 @@
       "target": "inverse",
       "relation": "相关知识"
     }
-  ]
+  ],
+  "crossRefs": [],
+  "description": "",
+  "createdAt": "2026-09-25T00:21:31.490Z",
+  "updatedAt": "2026-09-25T11:23:07.704Z",
+  "documents": [
+    {
+      "id": "doc_legacy",
+      "title": "机器人学知识图谱（演示）",
+      "filename": "robotics-demo.md",
+      "uploadedAt": "2026-09-25T00:21:31.490Z",
+      "nodeCount": 4
+    }
+  ],
+  "ownerId": "user:c8737bf3-1b22-483f-8e09-f5378c1aea2b",
+  "visibility": "private"
 }

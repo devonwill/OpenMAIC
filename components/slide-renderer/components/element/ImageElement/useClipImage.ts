@@ -1,3 +1,8 @@
+/**
+ * 本文件：图片裁剪形状与图片定位的计算 Hook。
+ * 职责：由 clip 配置生成 CSS clip-path，以及图片在裁剪框内的缩放偏移。
+ * 关键点：圆角元素会覆盖裁剪形状的 radius；未裁剪时图片铺满 100%。
+ */
 import { useMemo } from 'react';
 import type { PPTImageElement } from '@openmaic/dsl';
 import { CLIPPATHS, ClipPathTypes } from '@/configs/image-clip';
@@ -26,6 +31,7 @@ export function useClipImage(element: PPTImageElement) {
   }, [element.clip, element.radius]);
 
   const imgPosition = useMemo(() => {
+    // 无裁剪范围时图片填满容器
     if (!element.clip || !element.clip.range) {
       return {
         top: '0',
@@ -35,6 +41,8 @@ export function useClipImage(element: PPTImageElement) {
       };
     }
 
+    // 裁剪 range 为百分比区间；把可见区放大到 100%/scale，
+    // 再按起点反向平移，等价于把整图对齐到裁剪窗口（坐标换算需与导出一致）
     const [start, end] = element.clip.range;
 
     const widthScale = (end[0] - start[0]) / 100;

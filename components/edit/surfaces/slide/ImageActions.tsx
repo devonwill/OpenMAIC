@@ -1,3 +1,10 @@
+/**
+ * 本文件：选中图片元素的操作组（替换、水平/垂直翻转）。
+ * 职责：挂载在 AnchoredElementBar 内，替换按钮弹出 Popover 复用 ImagePicker，
+ * 翻转直接调用 use-slide-surface 的 toggleImageFlip。
+ * 关键点：按钮 onMouseDown preventDefault，防止点击期间画布丢失选中态；
+ * Popover 打开时阻止自动聚焦，避免抢走画布焦点。
+ */
 'use client';
 
 import { FlipHorizontal, FlipVertical, ImageUp } from 'lucide-react';
@@ -14,6 +21,9 @@ const BTN =
  * Replace / flip controls for a selected image element. Mounted inside the
  * AnchoredElementBar (itself a portaled popover), so `onMouseDown` preventDefault
  * on each button keeps the canvas selection alive across the click.
+ *
+ * 中文要点：纯受控展示，无本地状态；替换走 replaceImageSrc(element.id, src)，
+ * 翻转以当前元素对象为入参做布尔取反。
  */
 export function ImageActions({ element }: { readonly element: PPTImageElement }) {
   const { t } = useI18n();

@@ -1,3 +1,10 @@
+/**
+ * 本文件：时间轴动作选择弹层组件。
+ * 职责：在指定锚点旁以 portal 弹出可插入的动作类型列表（旁白/聚光/激光/讨论），
+ * 选中后经 onSelect 回调上抛，组件本身不改数据。
+ * 关键点：卡片按 DOMRect 锚定并夹取在视口内，下方放不下则向上翻；
+ * 点击遮罩或 Esc 关闭。
+ */
 'use client';
 
 /**
@@ -26,6 +33,7 @@ const DESC_KEY: Record<PickerType, string> = {
   discussion: 'edit.picker.discussionDesc',
 };
 
+// 动作类型 → 弹层内描述文案的 i18n 键。
 export function ActionPicker({
   anchor,
   sceneType,

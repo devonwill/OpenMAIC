@@ -1,3 +1,10 @@
+/**
+ * 本文件：图片来源选择器（本地文件 / 拖放 / 网络 URL）。
+ * 职责：把三种来源统一成一个图片 src 字符串回调 onPick，
+ * 本地文件经 FileReader 转 Data URL 后上抛。
+ * 关键点：非 image/* 类型文件直接忽略；读取失败仅 console.error 不打断交互；
+ * URL 输入为空或全空白时插入按钮保持禁用。
+ */
 'use client';
 
 import { useRef, useState } from 'react';

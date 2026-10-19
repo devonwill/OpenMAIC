@@ -4,6 +4,13 @@ import { useState, useCallback } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { UsageDashboard } from './usage-dashboard';
 import {
   AlertDialog,
@@ -14,8 +21,11 @@ import {
   AlertDialogFooter,
   AlertDialogCancel,
 } from '@/components/ui/alert-dialog';
-import { Loader2, Trash2, AlertTriangle } from 'lucide-react';
+import { Loader2, Trash2, AlertTriangle, Sun, Moon, Monitor } from 'lucide-react';
 import { useI18n } from '@/lib/hooks/use-i18n';
+import { useTheme } from '@/lib/hooks/use-theme';
+import { supportedLocales } from '@/lib/i18n';
+import type { Locale } from '@/lib/i18n';
 import { clearDatabase } from '@/lib/utils/database';
 import { useSettingsStore } from '@/lib/store/settings';
 import { useUserProfileStore } from '@/lib/store/user-profile';
@@ -23,6 +33,7 @@ import { toast } from 'sonner';
 import { createLogger } from '@/lib/logger';
 import { clearCacheErrorMessage } from './clear-cache-error-message';
 import { runClearCache, shouldReloadAfterClear } from './clear-cache-workflow';
+import { cn } from '@/lib/utils';
 
 const log = createLogger('GeneralSettings');
 
@@ -49,7 +60,8 @@ async function clearPersistedStore(persistApi: PersistApi, fallbackName: string)
 }
 
 export function GeneralSettings() {
-  const { t } = useI18n();
+  const { t, locale, setLocale } = useI18n();
+  const { theme, setTheme } = useTheme();
 
   // Clear cache state
   const [showClearDialog, setShowClearDialog] = useState(false);
@@ -111,6 +123,80 @@ export function GeneralSettings() {
 
   return (
     <div className="flex flex-col gap-8">
+      {/* Appearance group: language + theme. Consolidated here so the home
+          page header no longer needs an inline language/theme pill — users
+          open the system settings panel to switch either. */}
+      <div className="flex flex-col gap-6">
+        {/* Language */}
+        <div className="flex items-center justify-between gap-6">
+          <div className="min-w-0 flex-1">
+            <Label htmlFor="general-language" className="text-sm font-medium">
+              {t('settings.language')}
+            </Label>
+            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+              {t('settings.languageDesc')}
+            </p>
+          </div>
+          <Select
+            value={locale}
+            onValueChange={(value) => setLocale(value as Locale)}
+          >
+            <SelectTrigger id="general-language" size="sm" className="w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {supportedLocales.map((l) => (
+                <SelectItem key={l.code} value={l.code}>
+                  {l.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Theme — three-way segmented control. Setting via system follows
+            the OS prefers-color-scheme; the icon mirrors the resolved theme. */}
+        <div className="flex items-center justify-between gap-6">
+          <div className="min-w-0 flex-1">
+            <Label className="text-sm font-medium">{t('settings.theme')}</Label>
+            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+              {t('settings.themeDesc')}
+            </p>
+          </div>
+          <div
+            role="radiogroup"
+            aria-label={t('settings.theme')}
+            className="inline-flex h-8 items-center rounded-md border border-input bg-transparent p-0.5 shadow-xs"
+          >
+            {(
+              [
+                { value: 'light', icon: Sun },
+                { value: 'dark', icon: Moon },
+                { value: 'system', icon: Monitor },
+              ] as const
+            ).map(({ value, icon: Icon }) => (
+              <button
+                key={value}
+                type="button"
+                role="radio"
+                aria-checked={theme === value}
+                aria-label={t(`settings.themeOptions.${value}`)}
+                onClick={() => setTheme(value)}
+                className={cn(
+                  'inline-flex h-7 items-center gap-1.5 rounded-[5px] px-2.5 text-xs font-medium transition-colors',
+                  theme === value
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50',
+                )}
+              >
+                <Icon className="size-3.5" />
+                <span>{t(`settings.themeOptions.${value}`)}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* Usage statistics dashboard */}
       <UsageDashboard />
 

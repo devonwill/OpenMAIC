@@ -1,3 +1,10 @@
+/**
+ * 本文件：班级名单编辑面板组件。
+ * 职责：以卡片列表展示教师与 AI 同学，支持展开编辑姓名、人设、头像，
+ * 以及同学的排序与移出，所有改动经 useAgentRoster 提交到舞台文档。
+ * 关键点：姓名/人设为受控外的现场草稿，经 registerDraft 注册、
+ * 面板关闭前由 flushDrafts 同步冲刷到持久化 store。
+ */
 'use client';
 
 /**
@@ -474,6 +481,7 @@ function ClassmateCard({
 
 // ─── Main panel ───────────────────────────────────────────────────────────────
 
+/** 面板对外句柄：宿主在关闭对话框前调用 flushDrafts，把未提交的草稿同步写回。 */
 export interface AgentRosterPanelHandle {
   flushDrafts(): void;
 }
@@ -488,15 +496,22 @@ interface AgentRosterPanelProps {
   readonly headerTrailing?: ReactNode;
 }
 
+/**
+ * 班级名单编辑面板：教师卡片置顶且不可移除，同学卡片可排序、可退出。
+ * 通过 flushRef 暴露 flushDrafts，供 RosterDialog 在关闭前冲刷未提交草稿。
+ */
 export function AgentRosterPanel({ flushRef, headerTrailing }: AgentRosterPanelProps = {}) {
   const { t } = useI18n();
   const { roster, selectedId, select, add, update, remove, reorder, history } = useAgentRoster();
   const setStageAgents = useStageStore.use.setStageAgents();
   const rosterRef = useRef(roster);
+  // 用布局效果同步 ref，确保关闭时 flushDrafts 读到的是最新一轮 roster。
   useLayoutEffect(() => {
     rosterRef.current = roster;
   }, [roster]);
   const draftReaders = useRef(new Map<string, () => RosterDraft | null>());
+  // 注册草稿读取器：key 唯一标识一个输入位（如 `${id}:name`），
+  // 卸载时按「仍是当前读取器」再删除，避免旧实例清理误删新注册的同 key 项。
   const registerDraft = useCallback<RegisterDraft>((key, read) => {
     draftReaders.current.set(key, read);
     return () => {
@@ -507,6 +522,8 @@ export function AgentRosterPanel({ flushRef, headerTrailing }: AgentRosterPanelP
     flushRef,
     () => ({
       flushDrafts: () => {
+        // 逐个读取仍挂在 DOM 上的未提交草稿（失焦前被关闭的输入框），
+        // 合并出新名单；无变化时不动 store，避免产生多余的持久化写入。
         let next = rosterRef.current;
         for (const read of draftReaders.current.values()) {
           const draft = read();

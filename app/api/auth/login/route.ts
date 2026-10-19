@@ -54,7 +54,9 @@ export async function POST(request: Request) {
     }
     loginAttemptLimiter.recordSuccess(identity, trusted);
     await setSessionCookie(user.id, db);
-    return apiSuccess({ user: userView(user.id, user.email, user.role, user.displayName, user.phone) });
+    return apiSuccess({
+      user: userView(user.id, user.email, user.role, user.displayName, user.phone, user.avatar),
+    });
   } catch (error) {
     log.error('Login failed:', error);
     return apiError('INTERNAL_ERROR', 500, 'login failed');

@@ -16,8 +16,8 @@ import type { ProviderType } from '@/lib/types/provider';
 /** Loose grouping for the preset list UI. */
 export type PresetCategory = 'official' | 'aggregator' | 'token_plan' | 'third_party';
 
-/** The modalities a token plan can be applied to. ASR is omitted = not adapted. */
-export type TokenPlanModality = 'llm' | 'image' | 'video' | 'tts' | 'webSearch';
+/** The modalities a token plan can be applied to. A modality a plan does not declare is simply "not adapted yet". */
+export type TokenPlanModality = 'llm' | 'image' | 'video' | 'tts' | 'asr' | 'webSearch';
 
 /** Where a token plan maps in one modality's provider registry. */
 export interface TokenPlanModalityTarget {
@@ -38,7 +38,7 @@ export interface TokenPlanModalityTarget {
    * them; we never silently drop a model the user paid for.
    */
   defaultModels?: string[];
-  /** TTS only: default model id to enable. */
+  /** TTS/ASR only: default model id to enable. */
   defaultModelId?: string;
 }
 
@@ -59,7 +59,14 @@ export interface TokenPlanPreset {
 }
 
 /** Human-facing order of modalities in the apply result. */
-export const MODALITY_ORDER: TokenPlanModality[] = ['llm', 'image', 'video', 'tts', 'webSearch'];
+export const MODALITY_ORDER: TokenPlanModality[] = [
+  'llm',
+  'image',
+  'video',
+  'tts',
+  'asr',
+  'webSearch',
+];
 
 /**
  * Built-in token plans.
@@ -74,6 +81,7 @@ export const MODALITY_ORDER: TokenPlanModality[] = ['llm', 'image', 'video', 'tt
  * - MiniMax: full-set template — every modality has a working adapter
  *   (LLM/image/video/TTS/web-search).
  * - Volcengine Ark Agent Plan: LLM/image/video/TTS/web-search via the plan key.
+ * - Xiaomi MiMo: LLM + TTS + ASR via the regional Token Plan hosts.
  */
 export const TOKEN_PLAN_PRESETS: TokenPlanPreset[] = [
   // ── Gateway token plan (one key, vendor wire formats) ─────────────────────
@@ -253,6 +261,51 @@ export const TOKEN_PLAN_PRESETS: TokenPlanPreset[] = [
       tts: {
         providerId: 'doubao-tts',
         baseUrl: 'https://openspeech.bytedance.com/api/v3/plan/tts',
+      },
+    },
+  },
+
+  // ── Vendor token plan (LLM + TTS + ASR) ───────────────────────────────────
+  {
+    // Xiaomi MiMo Token Plan. The plan key (tp- prefix) only authenticates
+    // against the dedicated plan hosts; the pay-as-you-go host
+    // (api.xiaomimimo.com) rejects it. The plan is regional — we preset the CN
+    // host, and the same three endpoints are offered by the provider's
+    // base-URL picker so the user can move to SGP/EU without re-entering the
+    // key. LLM + TTS + ASR: MiMo serves chat here, speech synthesis on the same
+    // OpenAI-compatible /chat/completions route (text in the assistant turn,
+    // audio in the response), and speech recognition on that same route with an
+    // input_audio content part. We therefore declare those three modalities and
+    // apply/remove never touches image/video/search.
+    id: 'xiaomi',
+    name: '小米 MiMo',
+    websiteUrl: 'https://platform.xiaomimimo.com',
+    apiKeyPlaceholder: 'tp-...',
+    icon: '/logos/xiaomi.svg',
+    category: 'token_plan',
+    modalities: {
+      llm: {
+        providerId: 'xiaomi',
+        baseUrl: 'https://token-plan-cn.xiaomimimo.com/v1',
+        apiFormat: 'openai',
+        defaultModels: [
+          'mimo-v2.6-pro',
+          'mimo-v2.6-flash',
+          'mimo-v2.5-pro',
+          'mimo-v2.5',
+        ],
+      },
+      tts: {
+        providerId: 'xiaomi-tts',
+        baseUrl: 'https://token-plan-cn.xiaomimimo.com/v1',
+        defaultModelId: 'mimo-v2.5-tts',
+      },
+      // ASR shares the plan host and the /chat/completions route; only the
+      // request shape differs (an input_audio content part instead of text).
+      asr: {
+        providerId: 'xiaomi-asr',
+        baseUrl: 'https://token-plan-cn.xiaomimimo.com/v1',
+        defaultModelId: 'mimo-v2.5-asr',
       },
     },
   },

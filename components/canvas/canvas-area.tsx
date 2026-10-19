@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Play } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SceneRenderer } from '@/components/stage/scene-renderer';
+import { CitationBadge } from '@/components/stage/citation-badge';
 import { SceneProvider } from '@/lib/contexts/scene-context';
 import { Whiteboard } from '@/components/whiteboard';
 import { CanvasToolbar } from '@/components/canvas/canvas-toolbar';
@@ -227,6 +228,9 @@ export function CanvasArea({
             </div>
           )}
 
+          {/* 本页引用角标（P0-2 引用可追溯）：有效清单可展开，无效引用标红 */}
+          {currentScene?.citationAudit && <CitationBadge audit={currentScene.citationAudit} />}
+
           {/* Play hint — breathing button when idle or paused (slides only) */}
           <AnimatePresence>
             {showPlayHint && (
@@ -258,10 +262,10 @@ export function CanvasArea({
                         ease: 'easeInOut',
                       },
                     }}
-                    className="w-20 h-20 rounded-full bg-white/95 dark:bg-gray-800/95 flex items-center justify-center shadow-[0_4px_30px_rgba(147,51,234,0.15),inset_0_0_0_1px_rgba(233,213,255,0.5)] dark:shadow-[0_4px_30px_rgba(147,51,234,0.3),inset_0_0_0_1px_rgba(126,34,206,0.3)]"
+                    className="w-20 h-20 rounded-full bg-white/95 dark:bg-gray-800/95 flex items-center justify-center shadow-[0_4px_30px_rgba(37,99,235,0.15),inset_0_0_0_1px_rgba(191,219,254,0.5)] dark:shadow-[0_4px_30px_rgba(37,99,235,0.3),inset_0_0_0_1px_rgba(30,58,138,0.3)]"
                     style={{ willChange: 'transform' }}
                   >
-                    <Play className="w-7 h-7 text-purple-600 dark:text-purple-400 fill-purple-600/90 dark:fill-purple-400/90 ml-0.5" />
+                    <Play className="w-7 h-7 text-blue-600 dark:text-blue-400 fill-blue-600/90 dark:fill-blue-400/90 ml-0.5" />
                   </motion.div>
                 </motion.div>
               </motion.div>

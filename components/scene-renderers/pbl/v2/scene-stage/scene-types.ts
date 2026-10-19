@@ -25,8 +25,9 @@ export interface SanitizedSceneVisual {
   readonly caption?: string;
 }
 
-/** Neutral fallback palette (used when sceneVisual is absent/invalid). */
-const FALLBACK = { bg1: '#26244a', bg2: '#1a1934', accent: '#9d8cff' } as const;
+/** Neutral fallback palette (used when sceneVisual is absent/invalid).
+ *  冷蓝底 + 品牌蓝点缀，与全局主题一致；用户自带 sceneVisual 时不生效。 */
+const FALLBACK = { bg1: '#16233d', bg2: '#0b1220', accent: '#5b9be0' } as const;
 
 const HEX = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 

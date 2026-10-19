@@ -1,3 +1,4 @@
+import { knowledgeRequestOwner } from '@/lib/knowledge/access';
 /**
  * Scene Outlines Streaming API (SSE)
  *
@@ -15,6 +16,7 @@
 
 import { NextRequest } from 'next/server';
 import { getClassroomKnowledge } from '@/lib/knowledge/server';
+import { normalizeQuota } from '@/lib/knowledge/quota';
 import { streamLLM } from '@/lib/ai/llm';
 import { buildPrompt, PROMPT_IDS } from '@/lib/prompts';
 import {
@@ -452,7 +454,18 @@ export async function POST(req: NextRequest) {
       return apiError('INTERNAL_ERROR', 500, 'Prompt template not found');
     }
 
-    prompts.user += await getClassroomKnowledge(requirements.requirement);
+    // 图2 selection: chosen 知识库 bundles + the three-route citation quota.
+    // 断网降级：webSearch 关闭时强制 web=0，模型份额并入本地，实现纯本地生成。
+    const knowledgeQuota = normalizeQuota(body.knowledge?.quota ?? null);
+    if (requirements.webSearch !== true) {
+      knowledgeQuota.web = 0;
+      knowledgeQuota.model = 100 - knowledgeQuota.local;
+    }
+    prompts.user += await getClassroomKnowledge(requirements.requirement, {
+      ownerId: await knowledgeRequestOwner(req),
+      bundleIds: body.knowledge?.bundleIds,
+      quota: knowledgeQuota,
+    });
 
     log.info(
       `Generating outlines: "${requirements.requirement.substring(0, 50)}" [model=${modelString}]`,

@@ -286,7 +286,7 @@ export function SlideElementPickOverlay({ scene, onPick, onCancel }: SlideElemen
       {outlines.map((outline) => (
         <div
           key={outline.id}
-          className="absolute rounded-sm border border-violet-400/70 bg-violet-400/[0.04] pointer-events-none"
+          className="absolute rounded-sm border border-blue-400/70 bg-blue-400/[0.04] pointer-events-none"
           style={{
             left: outline.left,
             top: outline.top,
@@ -303,7 +303,7 @@ export function SlideElementPickOverlay({ scene, onPick, onCancel }: SlideElemen
       {fallbackElements.length > 0 && (
         <button
           type="button"
-          className="absolute bottom-3 left-3 rounded-lg border border-violet-200 bg-white/95 px-3 py-1.5 text-xs font-medium text-violet-700 shadow-lg dark:border-violet-700 dark:bg-gray-900/95 dark:text-violet-300"
+          className="absolute bottom-3 left-3 rounded-lg border border-blue-200 bg-white/95 px-3 py-1.5 text-xs font-medium text-blue-700 shadow-lg dark:border-blue-700 dark:bg-gray-900/95 dark:text-blue-300"
           onPointerDown={(event) => event.stopPropagation()}
           onClick={(event) => {
             event.preventDefault();
@@ -335,10 +335,10 @@ export function SlideElementPickOverlay({ scene, onPick, onCancel }: SlideElemen
                   type="button"
                   role="menuitem"
                   key={id}
-                  className="flex w-full items-start gap-2 rounded-lg px-2 py-1.5 text-left text-xs hover:bg-violet-50 dark:hover:bg-violet-950/40"
+                  className="flex w-full items-start gap-2 rounded-lg px-2 py-1.5 text-left text-xs hover:bg-blue-50 dark:hover:bg-blue-950/40"
                   onClick={() => pickById(id)}
                 >
-                  <span className="shrink-0 font-semibold text-violet-600 dark:text-violet-400">
+                  <span className="shrink-0 font-semibold text-blue-600 dark:text-blue-400">
                     {presentation.typeLabel}
                   </span>
                   <span aria-hidden="true" className="shrink-0 text-gray-400">

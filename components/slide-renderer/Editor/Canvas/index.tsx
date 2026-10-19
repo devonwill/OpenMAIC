@@ -1,3 +1,12 @@
+/**
+ * 本文件：编辑态画布主组件（Canvas）。
+ * 职责：组合视口缩放、元素列表本地态、拖拽/缩放/旋转/框选等 hooks，
+ *       渲染对齐线、选中操作柄、标尺网格与右键菜单，是编辑器的核心舞台。
+ * 关键点：元素列表在 store 与本地 state 双轨同步以支撑拖拽过程中的
+ *       高频更新；渲染缩放用 hook 局部 fitScale 而非全局 canvasScale，
+ *       避免兄弟画布（crossfade/keep-alive）污染本画布的比例。
+ */
+
 'use client';
 
 import { useRef, useState, useEffect } from 'react';
@@ -61,6 +70,10 @@ export interface CanvasProps {
  * <SceneProvider>
  *   <Canvas />
  * </SceneProvider>
+ *
+ * 中文：编辑画布组件——幻灯片数据走 Scene Context，拖拽等高频操作走
+ * 本地元素列表（useRef+useState），选中/工具栏等 UI 状态走 Canvas Store，
+ * 键盘状态走 Keyboard Store。
  */
 export function Canvas(_props: CanvasProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -109,6 +122,8 @@ export function Canvas(_props: CanvasProps) {
   // canvas rendering a scale computed for another container until a seam drag
   // forced a re-measure. The store is still written by the hook for
   // out-of-tree consumers.
+  // 中文：用局部 fitScale 而非全局 store 的 canvasScale，防止切换页签/
+  // 淡出淡入时被其它画布写入的比例带偏；store 仍照常写入供树外消费。
   const { viewportStyles, dragViewport, fitScale } = useViewportSize(canvasRef);
   const canvasScale = fitScale;
 
@@ -145,6 +160,8 @@ export function Canvas(_props: CanvasProps) {
   const { addElement, pasteElement, selectAllElements, deleteAllElements } = useCanvasOperations();
 
   // Click on blank canvas area: clear active elements
+  // 中文：空白区按下分三支——点到右键菜单（Portal 渲染，不在画布子树内）直接忽略；
+  // 先清空选中，再按空格与否决定「拖拽画布」还是「框选元素」
   const handleClickBlankArea = (e: React.MouseEvent) => {
     // Check if the click target is a context menu element (menu content in Portal)
     const target = e.target as HTMLElement;
@@ -178,6 +195,8 @@ export function Canvas(_props: CanvasProps) {
     if (target.closest('.editable-element')) return;
 
     const viewportRect = viewportRef.current.getBoundingClientRect();
+    // 视口坐标系是缩放前的画布坐标：需减去视口左上角屏幕偏移，
+    // 再除以 canvasScale 换算，文本框才能准确落在双击点上
     const textElement = createTextElementAtCanvasPoint(
       createElementId('text'),
       { x: e.clientX, y: e.clientY },

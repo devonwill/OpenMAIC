@@ -89,7 +89,48 @@ COPY . .
 # memory, so it does not by itself prevent a host- or VM-level OOM.
 RUN NODE_OPTIONS=--max-old-space-size=1024 pnpm run build:packages
 
+# 4GB 内存的小机器上，next build（Turbopack）默认会吃掉 2GB+ 堆内存，把宿主
+# 的 sshd/nginx 一起拖进 thrashing（表现为 SSH banner 超时、服务假死）。
+# 这里把 V8 堆上限压到 1536MB，并关掉遥测、限制静态页面生成的并发，
+# 让构建峰值内存控制在宿主扛得住的范围内。
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_OPTIONS=--max-old-space-size=1536
 RUN pnpm build
+
+# neo4j-driver 及其传递依赖只能通过 new Function('s','return import(s)') 动态
+# import，Next 的 output tracer 静态追不到，standalone 产物里不会有它们。Aura 云端
+# 知识图谱因此会在容器里静默降级成 JSON 兜底。outputFileTracingIncludes 里写
+# `node_modules/.pnpm/<pkg>@*/**` 会把 pnpm 虚拟 store 下的同级目录也当成文件读，
+# 让 Turbopack 直接 build 失败。
+#
+# pnpm 虚拟 store 的结构是：
+#   node_modules/.pnpm/neo4j-driver@6.2.0/node_modules/neo4j-driver          <- 包本体
+#   node_modules/.pnpm/neo4j-driver@6.2.0/node_modules/neo4j-driver-core     <- 指向 ../../neo4j-driver-core@6.2.0/... 的 symlink
+#   node_modules/.pnpm/neo4j-driver-core@6.2.0/node_modules/neo4j-driver-core <- 包本体
+# 这些 symlink 是相对路径，指向虚拟 store 里的兄弟条目，所以不能只搬一个条目，
+# 必须把相关条目连同 .pnpm 目录结构一起搬过去，相对路径才继续有效。
+# 之前只搬了 neo4j-driver 条目，symlink 全部断链，require('neo4j-driver-core')
+# 依旧 MODULE_NOT_FOUND。
+RUN set -eux; \
+    target=/app/.next/standalone/node_modules; \
+    mkdir -p "$target/.pnpm"; \
+    for pkg in neo4j-driver neo4j-driver-core neo4j-driver-bolt-connection; do \
+      for entry in node_modules/.pnpm/${pkg}@*; do \
+        [ -d "$entry" ] || continue; \
+        dest="$target/.pnpm/$(basename "$entry")"; \
+        rm -rf "$dest"; \
+        mkdir -p "$dest"; \
+        cp -RL "$entry"/. "$dest"/; \
+        echo "copied .pnpm/$(basename "$entry")"; \
+      done; \
+    done; \
+    # 顶层入口：symlink 指向刚搬过去的 .pnpm 条目
+    for pkg in neo4j-driver; do \
+      rm -rf "$target/$pkg"; \
+      ln -s ".pnpm/$(basename "$(echo node_modules/.pnpm/${pkg}@* | cut -d' ' -f1)")/node_modules/$pkg" "$target/$pkg"; \
+      echo "linked $pkg"; \
+    done; \
+    node -e "require('/app/.next/standalone/node_modules/neo4j-driver')" && echo "neo4j-driver loads OK"
 
 # ---- Stage 4: Runner ----
 FROM node:22-alpine AS runner

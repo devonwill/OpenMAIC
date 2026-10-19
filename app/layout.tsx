@@ -11,6 +11,7 @@ import { AuthProvider } from '@/lib/hooks/use-auth';
 import { Toaster } from '@/components/ui/sonner';
 import { ServerProvidersInit } from '@/components/server-providers-init';
 import { TeacherConfigSync } from '@/components/auth/teacher-config-sync';
+import { CloneVoiceDefaultSync } from '@/components/audio/clone-voice-default-sync';
 import { StorageHealthNotice } from '@/components/storage-health-notice';
 import { AccessCodeGuard } from '@/components/access-code-guard';
 import { ProSwapWatcher } from '@/components/workbench/ProSwapWatcher';
@@ -31,9 +32,9 @@ import { ProSwapWatcher } from '@/components/workbench/ProSwapWatcher';
 import '@fontsource-variable/inter';
 
 export const metadata: Metadata = {
-  title: 'OpenMAIC',
+  title: 'OpenRobotics',
   description:
-    'The open-source AI interactive classroom. Upload a PDF to instantly generate an immersive, multi-agent learning experience.',
+    'The open-source AI interactive robotics classroom. Upload a PDF to instantly generate an immersive, multi-agent learning experience.',
 };
 
 export default function RootLayout({
@@ -54,6 +55,7 @@ export default function RootLayout({
             <AuthProvider>
               <ServerProvidersInit />
               <TeacherConfigSync />
+              <CloneVoiceDefaultSync />
               <ProSwapWatcher />
               <AccessCodeGuard>{children}</AccessCodeGuard>
               <Toaster position="top-center" />

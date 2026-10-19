@@ -1,4 +1,6 @@
+import { knowledgeRequestOwner } from '@/lib/knowledge/access';
 import { getClassroomKnowledge } from '@/lib/knowledge/server';
+import { normalizeQuota } from '@/lib/knowledge/quota';
 /**
  * Scene Content Generation API
  *
@@ -118,8 +120,21 @@ export async function POST(req: NextRequest) {
     outlineTitle = rawOutline?.title;
     resolvedModelString = modelString;
 
+    // 断网降级：webSearch 关闭时强制 web=0，引用只走本地知识与模型自身。
+    const knowledgeQuota = normalizeQuota(
+      (body as { knowledge?: { quota?: null } }).knowledge?.quota ?? null,
+    );
+    if (requirements?.webSearch !== true) {
+      knowledgeQuota.web = 0;
+      knowledgeQuota.model = 100 - knowledgeQuota.local;
+    }
     const knowledgeEvidence = await getClassroomKnowledge(
       [outline.title, outline.description, ...(outline.keyPoints ?? [])].join(' '),
+      {
+        ownerId: await knowledgeRequestOwner(req),
+        bundleIds: (body as { knowledge?: { bundleIds?: string[] } }).knowledge?.bundleIds,
+        quota: knowledgeQuota,
+      },
     );
 
     // Detect vision capability

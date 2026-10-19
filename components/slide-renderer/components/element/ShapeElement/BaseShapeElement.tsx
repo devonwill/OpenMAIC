@@ -1,3 +1,9 @@
+/**
+ * 本文件：只读/放映态形状元素组件。
+ * 职责：与编辑态相同的 SVG 形状绘制，但不接编辑与交互。
+ * 关键点：填充 defs id 使用 'base-' 前缀，与编辑态 'editable-' 区分，
+ *         避免同页两套 DOM 时 SVG id 冲突。
+ */
 'use client';
 
 import type { PPTShapeElement, ShapeText } from '@openmaic/dsl';
@@ -14,6 +20,8 @@ export interface BaseShapeElementProps {
 
 /**
  * Base shape element for read-only/playback mode
+ *
+ * 中文：只读态直接信任 viewBox 合法（数据由编辑器产出），不做回退校验。
  */
 export function BaseShapeElement({ elementInfo }: BaseShapeElementProps) {
   const { fill } = useElementFill(elementInfo, 'base');

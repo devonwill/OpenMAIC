@@ -1,3 +1,10 @@
+/**
+ * 本文件：选中元素后浮现在画布顶部的上下文小工具条。
+ * 职责：把 surface 提供的 FloatingAction 列表按 group 分段渲染，
+ * 每个动作是普通按钮或 popover 触发器（取色、字号等属性编辑）。
+ * 关键点：属性编辑就近放在此条而非固定右栏；弹层阻止外点失焦，
+ * 避免格式化命令重新聚焦编辑器时工具条被误关。
+ */
 'use client';
 
 import { Fragment } from 'react';
@@ -14,6 +21,8 @@ interface FloatingToolbarProps {
  * Each action is either a button (onInvoke) or a popover trigger
  * (popoverContent) — used by the slide surface for color pickers, font
  * select, etc. so properties live here instead of in a fixed right panel.
+ *
+ * 中文要点：actions 为空时不渲染；分组相邻的同 group 项之间加分隔线。
  */
 export function FloatingToolbar({ actions }: FloatingToolbarProps) {
   if (actions.length === 0) return null;

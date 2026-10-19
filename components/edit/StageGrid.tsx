@@ -1,3 +1,11 @@
+/**
+ * 本文件：编辑模式外框布局组件（五槽位网格）。
+ * 职责：以 top/left/right/bottom/center 五个命名槽位拼出编辑器外壳，
+ * 未提供的可选槽位自动折叠为零宽/零高。
+ * 关键点：左侧槽位纵贯三行，保证模式切换时侧栏像素位置不漂移；
+ * gridTemplateAreas 用内联样式，因 Tailwind 无法静态生成动态命名区域。
+ */
+
 import type { CSSProperties, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -53,6 +61,7 @@ const GRID_STYLE: CSSProperties = {
   gridTemplateRows: 'auto minmax(0, 1fr) auto',
 };
 
+/** 编辑模式五槽位布局外壳；centerSlot 必填并强制 min-size 为 0 以便子项收缩。 */
 export function StageGrid({
   topSlot,
   leftSlot,

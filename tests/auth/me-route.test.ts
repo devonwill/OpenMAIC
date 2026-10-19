@@ -34,6 +34,7 @@ const USER = {
   role: 'student' as const,
   displayName: '小明',
   phone: '13800138000',
+  avatar: null,
 };
 const SESSION_ID = '33333333-3333-4333-8333-333333333333';
 
@@ -90,8 +91,16 @@ describe('GET /api/auth/me', () => {
       role: 'student',
       displayName: '小明',
       phone: '13800138000',
+      avatar: null,
     });
     expect(data.user.passwordHash).toBeUndefined();
+  });
+
+  it('reports storage failures as 503, not a signed-out user', async () => {
+    mocks.getSessionWithUser.mockRejectedValueOnce(new Error('database unavailable'));
+    const response = await GET();
+    expect(response.status).toBe(503);
+    expect((await response.json()).user).toBeUndefined();
   });
 
   it('returns {user:null} when the session row is gone', async () => {
@@ -111,11 +120,13 @@ describe('PATCH /api/auth/me', () => {
   });
 
   it('rejects a malformed JSON body with 400', async () => {
-    const res = await PATCH(new Request('http://x/api/auth/me', {
-      method: 'PATCH',
-      headers: { 'content-type': 'application/json' },
-      body: 'not-json',
-    }));
+    const res = await PATCH(
+      new Request('http://x/api/auth/me', {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: 'not-json',
+      }),
+    );
     expect(res.status).toBe(400);
     expect(mocks.updateUserProfile).not.toHaveBeenCalled();
   });
@@ -144,6 +155,7 @@ describe('PATCH /api/auth/me', () => {
     expect(mocks.updateUserProfile).toHaveBeenCalledWith(DB, USER.id, {
       displayName: '新名字',
       phone: '13900139000',
+      avatar: null,
     });
     const data = await res.json();
     expect(data.user.displayName).toBe('新名字');
@@ -161,7 +173,27 @@ describe('PATCH /api/auth/me', () => {
     expect(mocks.updateUserProfile).toHaveBeenLastCalledWith(DB, USER.id, {
       displayName: '新名字',
       phone: null,
+      avatar: null,
     });
+  });
+
+  it('persists a built-in avatar path', async () => {
+    mocks.updateUserProfile.mockResolvedValue(undefined);
+    const res = await PATCH(patchRequest({ avatar: '/avatars/user.png' }));
+    expect(res.status).toBe(200);
+    expect(mocks.updateUserProfile).toHaveBeenLastCalledWith(DB, USER.id, {
+      displayName: '新名字',
+      phone: '13900139000',
+      avatar: '/avatars/user.png',
+    });
+    const data = await res.json();
+    expect(data.user.avatar).toBe('/avatars/user.png');
+  });
+
+  it('rejects an avatar that is not a built-in path, http(s) URL, or data URL', async () => {
+    const res = await PATCH(patchRequest({ avatar: '/etc/passwd' }));
+    expect(res.status).toBe(400);
+    expect(mocks.updateUserProfile).not.toHaveBeenCalled();
   });
 
   it('returns 503 when the database is unavailable', async () => {

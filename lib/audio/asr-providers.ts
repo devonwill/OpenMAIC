@@ -8,6 +8,7 @@
  * - OpenAI Whisper: https://platform.openai.com/docs/guides/speech-to-text
  * - Browser Native: Web Speech API (https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API)
  * - Qwen ASR: https://bailian.console.aliyun.com/
+ * - Xiaomi MiMo ASR: https://platform.xiaomimimo.com/docs/api-reference
  *
  * HOW TO ADD A NEW PROVIDER:
  *
@@ -196,6 +197,9 @@ export async function transcribeAudio(
         'lemonade-asr',
         'Lemonade',
       );
+
+    case 'xiaomi-asr':
+      return await transcribeXiaomiASR(config, audioBuffer);
 
     default:
       if (isCustomASRProvider(config.providerId)) {
@@ -533,6 +537,71 @@ async function transcribeQwenASR(
   // Extract text from first content item
   const transcribedText = messageContent[0]?.text || '';
   return { text: transcribedText };
+}
+
+/**
+ * Xiaomi MiMo ASR implementation.
+ *
+ * MiMo transcribes through its OpenAI-compatible `/chat/completions` route:
+ * the audio rides as an `input_audio` content part (base64 data URL) and the
+ * transcript comes back as the plain string at `choices[0].message.content`.
+ */
+async function transcribeXiaomiASR(
+  config: ASRModelConfig,
+  audioBuffer: Buffer | Blob,
+): Promise<ASRTranscriptionResult> {
+  const baseUrl = config.baseUrl || ASR_PROVIDERS['xiaomi-asr'].defaultBaseUrl;
+
+  let base64Audio: string;
+  if (audioBuffer instanceof Buffer) {
+    base64Audio = audioBuffer.toString('base64');
+  } else if (audioBuffer instanceof Blob) {
+    base64Audio = Buffer.from(await audioBuffer.arrayBuffer()).toString('base64');
+  } else {
+    throw new Error('Invalid audio buffer type');
+  }
+
+  const requestBody: Record<string, unknown> = {
+    model: config.modelId || ASR_PROVIDERS['xiaomi-asr'].defaultModelId,
+    messages: [
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'input_audio',
+            input_audio: { data: `data:audio/wav;base64,${base64Audio}` },
+          },
+        ],
+      },
+    ],
+  };
+
+  // Omit the language for 'auto' so MiMo auto-detects instead of being pinned.
+  if (config.language && config.language !== 'auto') {
+    requestBody.asr_options = { language: config.language };
+  }
+
+  const response = await audioProviderFetch(
+    `${baseUrl}/chat/completions`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${config.apiKey}`,
+        'Content-Type': 'application/json; charset=utf-8',
+      },
+      body: JSON.stringify(requestBody),
+    },
+    { allowLocalNetworks: config.publicOnly ? false : undefined },
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => response.statusText);
+    throw new Error(`Xiaomi MiMo ASR API error (${response.status}): ${errorText}`);
+  }
+
+  const data = await response.json();
+  const content = data?.choices?.[0]?.message?.content;
+  return { text: typeof content === 'string' ? content : '' };
 }
 
 /**

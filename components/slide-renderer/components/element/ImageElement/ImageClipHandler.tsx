@@ -1,3 +1,10 @@
+/**
+ * 本文件：图片裁剪交互层组件（编辑态）。
+ * 职责：以半透明底图 + 高亮裁剪框的形式，支持裁剪框的移动、八向缩放，
+ *       回车或点击外部确认后把 range/position 回传给元素更新。
+ * 关键点：所有鼠标位移先按画布缩放归一，再按元素旋转角反向旋转换算到
+ *         局部坐标；裁剪框被钳制在图片边界内，缩放有 50px 最小尺寸。
+ */
 'use client';
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
@@ -182,6 +189,8 @@ export function ImageClipHandler({
   }, [topImgPositionStyle]);
 
   // Move clip area
+  // 把像素位移换算到图片局部坐标，位移向量按元素旋转角反解（-rotate），
+  // 否则在旋转过的元素上拖动方向会错
   const moveClipRange = useCallback(
     (e: React.MouseEvent) => {
       setIsSettingClipRange(true);

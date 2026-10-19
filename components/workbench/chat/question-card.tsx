@@ -1,3 +1,10 @@
+/**
+ * 本文件：提问卡片组件（转录中的 ask_user 记录）。
+ * 职责：把「运行停在用户必须决策的问题上」渲染为时间线行，提供选项点击作答；
+ * 表单形态归 question-form，本卡片在表单占用输入区时折叠为一行指引。
+ * 关键点：「已作答」由 fold 派生（卡片下方出现用户消息即退休），
+ * 非本地标志；作答与复活互斥，表单优先，避免同一问题出现两份。
+ */
 'use client';
 
 /**
@@ -43,11 +50,13 @@ import { wbStyles as styles } from './chat-styles';
 import { useQuestionAnswer } from './question-card-state';
 
 /** What the surfaces say about whose move it is. */
+/** 界面文案：等待作答 / 已作答 / 回到表单。 */
 export const QUESTION_WAITING_LABEL = defaultWorkbenchTranslator('workbench.question.waiting');
 export const QUESTION_ANSWERED_LABEL = defaultWorkbenchTranslator('workbench.question.answered');
 /** The way back to the composer form, on the one card whose form was waved off. */
 export const QUESTION_REVIVE_LABEL = defaultWorkbenchTranslator('workbench.question.revive');
 
+/** 提问卡片：展示问题与选项，答案经 onAnswer 以普通用户消息发出；表单占用输入区时折叠为一行。 */
 export function QuestionCard({
   node,
   onAnswer,
@@ -82,9 +91,11 @@ export function QuestionCard({
   const { answered, locked, hint, mode, options } = answer;
   // The footer only exists when something is in it: confirm for a multi-select,
   // the way back to a dismissed form, or the one hint that still has work to do.
+  // 页脚只在有内容时出现：多选的确认、复活入口或仍需处理的提示。
   const footer = !answered && (mode === 'multi' || Boolean(onRevive) || Boolean(hint));
   // An answered question is a record, so it never collapses: the form is gone by
   // then and this row is the only place the question survives.
+  // 已作答后表单已收起，此行是问题唯一的存留处，故不再折叠。
   const summaryOnly = collapsed && !answered;
 
   return (

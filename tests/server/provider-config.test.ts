@@ -32,6 +32,7 @@ const ENV_PREFIXES_TO_CLEAR = [
   'TTS_AZURE',
   'TTS_GLM',
   'TTS_QWEN',
+  'TTS_XIAOMI',
   'TTS_DOUBAO',
   'TTS_ELEVENLABS',
   'TTS_MINIMAX',
@@ -1039,6 +1040,55 @@ video:
       vi.stubEnv('TTS_QWEN_VOICE_CLONE_MODEL', 'operator-vc-model');
       const { resolveTTSModel } = await import('@/lib/server/provider-config');
       expect(() => resolveTTSModel('qwen-tts', undefined, 'Cherry')).toThrow('not allowed');
+    });
+  });
+
+  describe('Xiaomi TTS resolution (stateless voice clone)', () => {
+    it('routes clone voices past the operator pin to the voiceclone model', async () => {
+      vi.stubEnv('TTS_XIAOMI_API_KEY', 'key');
+      vi.stubEnv('TTS_XIAOMI_MODELS', 'mimo-v2.5-tts');
+      const { resolveTTSModel } = await import('@/lib/server/provider-config');
+      expect(resolveTTSModel('xiaomi-tts', 'mimo-v2.5-tts', 'locally_registered_clone')).toBe(
+        'mimo-v2.5-tts-voiceclone',
+      );
+      // No client model either — the voice alone decides.
+      expect(resolveTTSModel('xiaomi-tts', undefined, 'locally_registered_clone')).toBe(
+        'mimo-v2.5-tts-voiceclone',
+      );
+    });
+
+    it('rejects client models outside the operator pin', async () => {
+      vi.stubEnv('TTS_XIAOMI_API_KEY', 'key');
+      vi.stubEnv('TTS_XIAOMI_MODELS', 'mimo-v2.5-tts');
+      const { resolveTTSModel } = await import('@/lib/server/provider-config');
+      expect(() => resolveTTSModel('xiaomi-tts', 'some-other-model', 'mimo_default')).toThrow(
+        'not allowed',
+      );
+    });
+
+    it('self-heals a persisted voiceclone-model wedge on catalog voices', async () => {
+      vi.stubEnv('TTS_XIAOMI_API_KEY', 'key');
+      vi.stubEnv('TTS_XIAOMI_MODELS', 'mimo-v2.5-tts');
+      const { resolveTTSModel } = await import('@/lib/server/provider-config');
+      expect(resolveTTSModel('xiaomi-tts', 'mimo-v2.5-tts-voiceclone', 'mimo_default')).toBe(
+        'mimo-v2.5-tts',
+      );
+    });
+
+    it('rejects catalog synthesis when the operator pins only the voiceclone model', async () => {
+      vi.stubEnv('TTS_XIAOMI_API_KEY', 'key');
+      vi.stubEnv('TTS_XIAOMI_MODELS', 'mimo-v2.5-tts-voiceclone');
+      const { resolveTTSModel } = await import('@/lib/server/provider-config');
+      expect(() => resolveTTSModel('xiaomi-tts', undefined, 'mimo_default')).toThrow('not allowed');
+    });
+
+    it('serves xiaomi ahead of qwen so first-wins registration resolves to xiaomi', async () => {
+      vi.stubEnv('TTS_QWEN_API_KEY', 'qwen-key');
+      vi.stubEnv('TTS_XIAOMI_API_KEY', 'xiaomi-key');
+      const { enabledServerTTSProviderIds } = await import('@/lib/server/provider-config');
+      const ids = enabledServerTTSProviderIds();
+      expect(ids.indexOf('xiaomi-tts')).toBeGreaterThanOrEqual(0);
+      expect(ids.indexOf('xiaomi-tts')).toBeLessThan(ids.indexOf('qwen-tts'));
     });
   });
 

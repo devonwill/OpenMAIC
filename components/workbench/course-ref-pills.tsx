@@ -1,3 +1,9 @@
+/**
+ * 本文件：输入区课程引用胶囊。
+ * 职责：展示本条消息所点名的课程（@ 提及），可单个移除，随消息发送。
+ * 关键点：与元素引用胶囊共用 composer-pill 词汇；区别于输入框下方
+ * 常驻且不随消息发送的会话课程条。
+ */
 'use client';
 
 /**
@@ -17,6 +23,7 @@ import { useI18n } from '@/lib/hooks/use-i18n';
 import type { CourseRef } from '@/lib/workbench/course-refs';
 import { ComposerPill, ComposerPillRow } from './composer-pill';
 
+// 无引用时整行不渲染；inline 决定复用调用方已有的胶囊行而非自开一行。
 export function CourseRefPills({
   refs,
   onRemove,

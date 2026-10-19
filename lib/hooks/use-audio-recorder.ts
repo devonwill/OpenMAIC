@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { ASR_PROVIDERS } from '@/lib/audio/constants';
 import { getASRServerDisabledError } from '@/lib/audio/asr-enablement';
+import { ASR_NOT_CONFIGURED_MESSAGE, toChineseAsrError } from '@/lib/audio/asr-error-message';
 import { normalizeASRUploadAudio } from '@/lib/audio/wav-utils';
 import { createLogger } from '@/lib/logger';
 
@@ -76,15 +77,24 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}) {
         });
 
         if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error || 'Transcription failed');
+          // The route's apiError() puts the generic code in `error` and the
+          // real upstream cause in `details` (lib/server/api-response.ts).
+          // Prefer details so the user sees why transcription actually
+          // failed, localized via toChineseAsrError below.
+          const body = (await response.json().catch(() => null)) as
+            | { error?: string; details?: string; errorCode?: string }
+            | null;
+          const raw = body?.details || body?.error || 'Transcription failed';
+          throw new Error(toChineseAsrError(raw));
         }
 
         const result = await response.json();
         onTranscription?.(result.text);
       } catch (error) {
         log.error('Transcription error:', error);
-        onError?.(error instanceof Error ? error.message : '语音识别失败，请重试');
+        onError?.(
+          error instanceof Error ? toChineseAsrError(error.message) : '语音识别失败，请重试',
+        );
       } finally {
         setIsProcessing(false);
         setRecordingTime(0);
@@ -214,6 +224,28 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}) {
 
           recognition.start();
           speechRecognitionRef.current = recognition;
+          return;
+        }
+
+        // Preflight for server-side ASR: don't request mic permission or
+        // upload a clip when this selection has no usable credentials.
+        // Server-managed providers carry their key/base URL server-side
+        // (isServerConfigured, synced from the provider-config API and
+        // already cleared by the serverDisabled check above); keyless local
+        // providers (FunASR/Lemonade) need no key at all.
+        const providerConfig = asrProvidersConfig?.[asrProviderId];
+        const builtInProvider =
+          ASR_PROVIDERS[asrProviderId as keyof typeof ASR_PROVIDERS];
+        const requiresApiKey = builtInProvider
+          ? builtInProvider.requiresApiKey
+          : providerConfig?.requiresApiKey !== false;
+        if (
+          requiresApiKey &&
+          !providerConfig?.apiKey?.trim() &&
+          !providerConfig?.isServerConfigured
+        ) {
+          busyRef.current = false;
+          onError?.(ASR_NOT_CONFIGURED_MESSAGE);
           return;
         }
       }

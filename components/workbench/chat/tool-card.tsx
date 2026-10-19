@@ -1,3 +1,10 @@
+/**
+ * 本文件：工具调用卡片组件（转录中的 ToolRow）。
+ * 职责：按 tool-presentation 规则表把工具调用渲染为「一行人工可读摘要 + 可展开
+ * 的原始入参/结果/trace」；折叠行内展示进度、状态图标、chips 与耗时。
+ * 关键点：头部为单行 flex，摘要截断而 chips 永不换行；失败摘要直接显示错误句；
+ * skill 内容在首次展开时按需拉取。
+ */
 'use client';
 
 /**
@@ -32,6 +39,7 @@ export type ToolStackPosition = 'single' | 'first' | 'middle' | 'last';
 /** Chips the collapsed row shows before "+N"; the rest wait for the disclosure. */
 const INLINE_CHIPS_MAX = 2;
 
+/** 工具调用卡片：折叠行为一行摘要（失败时显示错误句），展开显示入参、结果、大纲与 trace。 */
 export function ToolCard({
   node,
   plan = [],
@@ -126,6 +134,7 @@ export function ToolCard({
     if (!hasBody) return;
     const nextOpen = !open;
     setOpen(nextOpen);
+    // 仅在「首次展开 create_skill 卡片且尚无内容」时才拉取 skill 正文，其余情况直接返回。
     if (
       !nextOpen ||
       !createdSkillId ||

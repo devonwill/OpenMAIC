@@ -35,7 +35,7 @@
  */
 
 /* ── Tokens ──────────────────────────────────────────────────────────────
-   Slate ramp + brand violet, matching the rest of the product. */
+   Slate ramp + brand blue, matching the rest of the product. */
 .ws-root {
   --ws-canvas-top: #f8fafc; /* slate-50  */
   --ws-canvas-bottom: #f1f5f9; /* slate-100 */
@@ -119,9 +119,14 @@
      translucent: a popover you can read the list through is not a popover. */
   --ws-raised: #ffffff;
 
-  --ws-accent: #7c3aed; /* violet-600, the product's accent */
-  --ws-accent-thread: rgba(124, 58, 237, 0.32);
-  --ws-accent-wash: rgba(124, 58, 237, 0.08);
+  --ws-accent: #044192; /* 品牌蓝，logo 主色 */
+  --ws-accent-thread: rgba(4, 65, 146, 0.32);
+  --ws-accent-wash: rgba(4, 65, 146, 0.08);
+  /* 橙色留给「进行中」以外需要引起注意的状态（升级 Pro、录制中），
+     不与品牌蓝争夺常规选中态。 */
+  --ws-hot: #f18e17;
+  --ws-hot-thread: rgba(241, 142, 23, 0.32);
+  --ws-hot-wash: rgba(241, 142, 23, 0.1);
 
   --ws-live: #10b981; /* emerald-500, as v2 */
   --ws-fail: #f43f5e; /* rose-500,   as v2 */
@@ -133,12 +138,11 @@
   --ws-lift:
     0 1px 1px rgba(15, 23, 42, 0.035), 0 3px 6px -2px rgba(15, 23, 42, 0.04),
     0 10px 20px -8px rgba(15, 23, 42, 0.05), 0 26px 46px -22px rgba(15, 23, 42, 0.07);
-  /* Focus adds the violet thread the classic composer only hints at
-     (`focus-within:shadow-violet-500/[0.06]`), and commits to it. */
+  /* Focus adds the accent thread the classic composer only hints at, and commits to it. */
   --ws-lift-focus:
     0 0 0 1px var(--ws-accent-thread), 0 0 0 4px var(--ws-accent-wash),
     0 2px 3px -1px rgba(15, 23, 42, 0.04), 0 8px 16px -4px rgba(15, 23, 42, 0.055),
-    0 22px 40px -14px rgba(15, 23, 42, 0.08), 0 40px 70px -34px rgba(124, 58, 237, 0.14);
+    0 22px 40px -14px rgba(15, 23, 42, 0.08), 0 40px 70px -34px rgba(4, 65, 146, 0.14);
   --ws-lift-sm:
     0 1px 1px rgba(15, 23, 42, 0.03), 0 2px 4px -1px rgba(15, 23, 42, 0.035),
     0 6px 12px -6px rgba(15, 23, 42, 0.045);
@@ -181,9 +185,12 @@
 
   --ws-raised: #1e293b; /* slate-800 — one step above the slate-900 canvas */
 
-  --ws-accent: #a78bfa; /* violet-400 reads on slate-950 */
-  --ws-accent-thread: rgba(167, 139, 250, 0.36);
-  --ws-accent-wash: rgba(167, 139, 250, 0.1);
+  --ws-accent: #6aa5e8; /* 亮品牌蓝在 slate-950 上可读 */
+  --ws-accent-thread: rgba(106, 165, 232, 0.36);
+  --ws-accent-wash: rgba(106, 165, 232, 0.1);
+  --ws-hot: #f6a83c;
+  --ws-hot-thread: rgba(246, 168, 60, 0.36);
+  --ws-hot-wash: rgba(246, 168, 60, 0.12);
 
   --ws-lift:
     0 1px 1px rgba(0, 0, 0, 0.3), 0 4px 10px -3px rgba(0, 0, 0, 0.32),
@@ -191,7 +198,7 @@
   --ws-lift-focus:
     0 0 0 1px var(--ws-accent-thread), 0 0 0 4px var(--ws-accent-wash),
     0 2px 4px -1px rgba(0, 0, 0, 0.3), 0 10px 20px -5px rgba(0, 0, 0, 0.36),
-    0 26px 48px -16px rgba(0, 0, 0, 0.44), 0 44px 76px -36px rgba(167, 139, 250, 0.2);
+    0 26px 48px -16px rgba(0, 0, 0, 0.44), 0 44px 76px -36px rgba(147, 197, 253, 0.2);
   --ws-lift-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 10px -4px rgba(0, 0, 0, 0.34);
   --ws-lift-sm-hover: 0 2px 4px rgba(0, 0, 0, 0.34), 0 8px 16px -6px rgba(0, 0, 0, 0.4);
 
@@ -214,7 +221,7 @@
   background-image:
     /* the pool behind hero + composer — violet-white, so the brand tints the
        light rather than sitting in a swatch somewhere */
-    radial-gradient(58% 34% at 50% 43%, rgba(124, 58, 237, 0.062), rgba(124, 58, 237, 0) 72%),
+    radial-gradient(58% 34% at 50% 43%, rgba(29, 78, 216, 0.062), rgba(29, 78, 216, 0) 72%),
     /* a white core inside the pool, so the falloff is not one flat cone and
        the composer sits in the brightest part of the canvas */
     radial-gradient(40% 24% at 50% 47%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0) 74%),
@@ -232,7 +239,7 @@
 
 .dark .ws-canvas {
   background-image:
-    radial-gradient(62% 36% at 50% 43%, rgba(167, 139, 250, 0.075), rgba(167, 139, 250, 0) 70%),
+    radial-gradient(62% 36% at 50% 43%, rgba(147, 197, 253, 0.075), rgba(147, 197, 253, 0) 70%),
     radial-gradient(36% 22% at 50% 47%, rgba(226, 232, 240, 0.045), rgba(226, 232, 240, 0) 72%),
     var(--ws-grain);
 }
@@ -652,8 +659,8 @@
 }
 
 /* ── The hero lockup ─────────────────────────────────────────────────────
-   The workspace's identity mark, not its billboard. `logo-horizontal.png` is
-   1232×269, so an unsized `<img>` renders at 269px tall and turns the page
+   The workspace's identity mark, not its billboard. `logo-horizontal.svg` is
+   1038×204, so an unsized `<img>` renders at 204px tall and turns the page
    into a splash screen — the height below is what keeps the composer the
    protagonist. Fixed pixels, deliberately: a viewport-relative hero grows on
    a wide monitor, which is exactly where a 760px column can least afford it.
@@ -662,7 +669,7 @@
    (a full page with nothing under it). The first cut of this surface took the
    bottom of that range and went under it — 40px is a browser-tab favicon, and
    a page whose masthead weighs nothing is top-light no matter what sits below.
-   46/56px is the correction: at 4.58:1 the wordmark lands 256px wide against a
+   46/56px is the correction: at 5:1 the wordmark lands ~230px wide against a
    760px composer, about a third of it, which is the proportion that makes the
    two read as one lockup instead of a caption over a box. */
 .ws-hero-logo {
@@ -698,14 +705,14 @@
   width: 46px;
   height: 46px;
   border-radius: 12px;
-  filter: drop-shadow(0 6px 14px rgba(124, 58, 237, 0.22))
+  filter: drop-shadow(0 6px 14px rgba(29, 78, 216, 0.22))
     drop-shadow(0 1px 2px rgba(15, 23, 42, 0.1));
   user-select: none;
   -webkit-user-drag: none;
 }
 
 .dark .ws-hero-mark {
-  filter: drop-shadow(0 6px 18px rgba(167, 139, 250, 0.26))
+  filter: drop-shadow(0 6px 18px rgba(147, 197, 253, 0.26))
     drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
 }
 

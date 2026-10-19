@@ -1,3 +1,10 @@
+/**
+ * 本文件：技能句柄（skill handle）整块退格删除 Hook。
+ * 职责：在各输入框中拦截 Backspace，把「技能 token」作为整体删除单位，
+ * 防止逐字符删成无法解析的残缺句柄。
+ * 关键点：输入法组合期（isComposing / 键码 229）直接放行，避免破坏中文输入；
+ * value 保持纯文本，撤销栈、粘贴、自动增高仍由浏览器接管。
+ */
 'use client';
 
 /**
@@ -30,9 +37,11 @@ export function useSkillHandleBackspace(
   return useCallback(
     (event) => {
       if (event.key !== 'Backspace') return false;
+      // 输入法组合中不改写 value，否则中文输入会被打断（本产品中文优先）。
       if (event.nativeEvent.isComposing || event.keyCode === 229) return false;
       const textarea = event.currentTarget;
       // A selection already has a unit of deletion: its own.
+      // 有选区时选区本身就是删除单位，交给浏览器原生行为。
       if (textarea.selectionStart !== textarea.selectionEnd) return false;
       const deletion = deleteSkillHandleBefore(textarea.value, textarea.selectionStart ?? 0);
       if (!deletion) return false;

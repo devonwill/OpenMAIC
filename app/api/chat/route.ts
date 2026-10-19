@@ -1,3 +1,4 @@
+import { knowledgeRequestOwner } from '@/lib/knowledge/access';
 /**
  * Stateless Chat API Endpoint
  *
@@ -14,6 +15,7 @@
 
 import { NextRequest } from 'next/server';
 import { attachClassroomKnowledge } from '@/lib/knowledge/server';
+import { normalizeQuota } from '@/lib/knowledge/quota';
 import { statelessGenerate } from '@/lib/orchestration/stateless-generate';
 import { isProviderKeyRequired } from '@/lib/ai/providers';
 import type { StatelessChatRequest, StatelessEvent } from '@/lib/types/chat';
@@ -90,7 +92,13 @@ export async function POST(req: NextRequest) {
       `Agents: ${body.config.agentIds.join(', ')}, Messages: ${body.messages.length}, Turn: ${body.directorState?.turnCount ?? 0}`,
     );
 
-    body.messages = await attachClassroomKnowledge(body.messages);
+    // 课堂讨论遵循图1 的知识库勾选：勾选了哪些库就只检索哪些库，
+    // 配额也来自选择面板（未下发 = 旧行为：全库检索 + 环境默认配额）。
+    body.messages = await attachClassroomKnowledge(body.messages, {
+      ownerId: await knowledgeRequestOwner(req),
+      bundleIds: body.knowledge?.bundleIds,
+      quota: normalizeQuota(body.knowledge?.quota ?? null),
+    });
 
     // Use the native request signal for abort propagation
     const signal = req.signal;

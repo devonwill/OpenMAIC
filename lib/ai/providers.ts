@@ -1471,14 +1471,14 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
     icon: '/logos/xiaomi.svg',
     models: [
       {
-        id: 'mimo-v2.5-pro',
-        name: 'MiMo V2.5 Pro',
+        id: 'mimo-v2.6-pro',
+        name: 'MiMo V2.6 Pro',
         contextWindow: 1048576,
         outputWindow: 131072,
         capabilities: {
           streaming: true,
           tools: true,
-          vision: false,
+          vision: true,
           thinking: {
             toggleable: true,
             budgetAdjustable: false,
@@ -1487,8 +1487,24 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
         },
       },
       {
-        id: 'mimo-v2-pro',
-        name: 'MiMo V2 Pro',
+        id: 'mimo-v2.6-flash',
+        name: 'MiMo V2.6 Flash',
+        contextWindow: 262144,
+        outputWindow: 65536,
+        capabilities: {
+          streaming: true,
+          tools: true,
+          vision: true,
+          thinking: {
+            toggleable: true,
+            budgetAdjustable: false,
+            defaultEnabled: true,
+          },
+        },
+      },
+      {
+        id: 'mimo-v2.5-pro',
+        name: 'MiMo V2.5 Pro',
         contextWindow: 1048576,
         outputWindow: 131072,
         capabilities: {
@@ -1511,38 +1527,6 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
           streaming: true,
           tools: true,
           vision: true,
-          thinking: {
-            toggleable: true,
-            budgetAdjustable: false,
-            defaultEnabled: true,
-          },
-        },
-      },
-      {
-        id: 'mimo-v2-omni',
-        name: 'MiMo V2 Omni',
-        contextWindow: 262144,
-        outputWindow: 131072,
-        capabilities: {
-          streaming: true,
-          tools: true,
-          vision: true,
-          thinking: {
-            toggleable: true,
-            budgetAdjustable: false,
-            defaultEnabled: true,
-          },
-        },
-      },
-      {
-        id: 'mimo-v2-flash',
-        name: 'MiMo V2 Flash',
-        contextWindow: 262144,
-        outputWindow: 65536,
-        capabilities: {
-          streaming: true,
-          tools: true,
-          vision: false,
           thinking: {
             toggleable: true,
             budgetAdjustable: false,

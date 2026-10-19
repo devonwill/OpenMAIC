@@ -33,6 +33,37 @@ export function preserveRecordedVoiceName(currentName: string, defaultName: stri
   return currentName.trim() ? currentName : defaultName;
 }
 
+export interface CloneVoiceOption {
+  id: string;
+  name: string;
+  providerId: string;
+}
+
+/**
+ * Clone-kind profiles → selectable options (settings popover + default-voice
+ * sync). VoxCPM records may carry an empty providerId — default it the same
+ * way getEnabledProvidersWithVoices does, and translate the local profile id
+ * to the wire voice id (VoxCPM clones are addressed by getVoxCPMProfileVoiceId,
+ * unlike Qwen/Xiaomi enrollment ids). Input order is preserved, so a list
+ * already sorted by updatedAt desc yields the most recently registered voice
+ * first.
+ */
+export function toCloneVoiceOptions(voiceProfiles: VoiceProfileRecord[]): CloneVoiceOption[] {
+  return voiceProfiles
+    .filter((profile) => profile.kind === 'clone')
+    .map((profile) => {
+      const providerId = profile.providerId || VOXCPM_TTS_PROVIDER_ID;
+      return {
+        id:
+          providerId === VOXCPM_TTS_PROVIDER_ID
+            ? getVoxCPMProfileVoiceId(profile.id)
+            : profile.id,
+        name: profile.name,
+        providerId,
+      };
+    });
+}
+
 function notifyVoiceProfilesChanged(): void {
   window.dispatchEvent(new Event(VOICE_PROFILES_CHANGED));
 }
@@ -316,6 +347,44 @@ export function useVoxCPMVoiceProfiles() {
   return { profiles, loading, refresh, addPromptVoice, addCloneVoice, deleteVoice };
 }
 
+/** 服务端已注册音色（GET /api/generate/voice），用于跨浏览器补全选项。 */
+interface ServerRegisteredVoice {
+  providerId: string;
+  voiceId: string;
+  name?: string;
+  createdAt?: number;
+}
+
+/**
+ * 拉取后端登记的克隆音色。
+ * 失败（离线 / 老服务端）时降级为空列表并告警，不影响本地档案展示。
+ */
+async function fetchServerRegisteredVoices(): Promise<VoiceProfileRecord[]> {
+  try {
+    const res = await fetch('/api/generate/voice', { method: 'GET' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const payload = (await res.json()) as {
+      voices?: ServerRegisteredVoice[];
+    };
+    return (payload.voices ?? []).map((v) => {
+      const createdAt = v.createdAt ?? 0;
+      return {
+        // id 用 voiceId：与本地档案同 id 时本地优先，去重靠 voiceId 对齐。
+        id: v.voiceId,
+        providerId: v.providerId,
+        kind: 'clone' as const,
+        name: v.name?.trim() || v.voiceId,
+        createdAt,
+        updatedAt: createdAt,
+      } satisfies VoiceProfileRecord;
+    });
+  } catch (error) {
+    // 降级要可见：否则「选项消失」这类问题会再次变成静默故障。
+    console.warn('[voice] 拉取服务端已注册音色失败，仅使用本地档案：', error);
+    return [];
+  }
+}
+
 export function useAllVoiceProfiles() {
   const [profiles, setProfiles] = useState<VoiceProfileRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -323,7 +392,13 @@ export function useAllVoiceProfiles() {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const rows = await db.voiceProfiles.toArray();
+      const [rows, serverRows] = await Promise.all([
+        db.voiceProfiles.toArray(),
+        fetchServerRegisteredVoices(),
+      ]);
+      const localIds = new Set(rows.map((row) => row.id));
+      // 本地档案（含参考音频 blob）优先，服务端只补本地缺失的音色。
+      rows.push(...serverRows.filter((row) => !localIds.has(row.id)));
       rows.sort((a, b) => b.updatedAt - a.updatedAt);
       setProfiles(rows);
     } finally {

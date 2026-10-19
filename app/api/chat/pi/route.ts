@@ -1,4 +1,6 @@
+import { knowledgeRequestOwner } from '@/lib/knowledge/access';
 import { attachClassroomKnowledge } from '@/lib/knowledge/server';
+import { normalizeQuota } from '@/lib/knowledge/quota';
 import { attachInteractiveState } from '@/lib/chat/pi/interactive-state-evidence';
 /**
  * Pi Director Chat API Endpoint
@@ -216,7 +218,13 @@ export async function POST(req: NextRequest) {
       return apiError('INVALID_REQUEST', 400, message);
     }
 
-    body.messages = await attachClassroomKnowledge(body.messages);
+    // 与经典 /api/chat 同一规则：遵循图1 知识库勾选圈定检索范围，
+    // 未下发勾选时回退旧行为（全库检索 + 环境默认配额）。
+    body.messages = await attachClassroomKnowledge(body.messages, {
+      ownerId: await knowledgeRequestOwner(req),
+      bundleIds: body.knowledge?.bundleIds,
+      quota: normalizeQuota(body.knowledge?.quota ?? null),
+    });
 
     log.info(
       `Pi request agents=${body.config.agentIds.join(', ')} messages=${body.messages.length} maxAgentTurns=${maxAgentTurns}`,

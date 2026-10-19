@@ -1,15 +1,23 @@
 import { PGlite } from '@electric-sql/pglite';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { verifyPassword } from '@/lib/server/auth/password';
 import {
-  createUser, ensureAuthSchema, getSessionWithUser, getUserByEmail,
+  createUser,
+  ensureAuthSchema,
+  getSessionWithUser,
+  getUserByEmail,
 } from '@/lib/server/auth/store';
 import { resetPasswordForEmail } from '@/scripts/reset-password';
 
 class PGlitePool {
   constructor(readonly db: PGlite) {}
-  query<TRow>(text: string, params?: unknown[]) { return this.db.query<TRow>(text, params); }
+  async connect() {
+    return { query: this.query.bind(this), release() {} };
+  }
+  query<TRow>(text: string, params?: unknown[]) {
+    return this.db.query<TRow>(text, params);
+  }
 }
 
 let db: PGlite;
@@ -20,7 +28,9 @@ beforeEach(async () => {
   pool = new PGlitePool(db);
   await ensureAuthSchema(pool);
 });
-afterEach(async () => { await db.close(); });
+afterEach(async () => {
+  await db.close();
+});
 
 const OLD_HASH = 'ab'.repeat(16) + '$' + 'cd'.repeat(32);
 const USER = {
@@ -75,5 +85,29 @@ describe('admin password reset (scripts/reset-password.ts)', () => {
     // 资料字段不被改动
     expect(found?.displayName).toBe(USER.displayName);
     expect(found?.role).toBe(USER.role);
+  });
+  it('rolls the password back if session revocation fails and releases the client', async () => {
+    await createUser(pool, USER);
+    await insertSession('33333333-3333-4333-8333-333333333333', USER.id);
+    const release = vi.fn();
+    const failingPool = {
+      query: pool.query.bind(pool),
+      async connect() {
+        return {
+          query: async <T>(sql: string, params?: unknown[]) => {
+            if (sql.startsWith('DELETE FROM user_sessions'))
+              throw new Error('revocation unavailable');
+            return pool.query<T>(sql, params);
+          },
+          release,
+        };
+      },
+    };
+    await expect(resetPasswordForEmail(failingPool, USER.email, 'newPassword123')).rejects.toThrow(
+      'revocation unavailable',
+    );
+    expect((await getUserByEmail(pool, USER.email))?.passwordHash).toBe(OLD_HASH);
+    expect(await getSessionWithUser(pool, '33333333-3333-4333-8333-333333333333')).not.toBeNull();
+    expect(release).toHaveBeenCalledOnce();
   });
 });

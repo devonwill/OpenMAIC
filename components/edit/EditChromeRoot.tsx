@@ -1,3 +1,10 @@
+/**
+ * 本文件：编辑模式根组件。
+ * 职责：组装编辑态外壳——EditShell（命令栏+画布+浮层）、左侧幻灯片导航栏、
+ * 底部 EditDock（旁白时间轴等工具）与右上 HeaderControls。
+ * 关键点：scene 必填，父级已按 mode==='edit' 且 currentScene 存在来门控挂载；
+ * 时间轴可用性同时决定是否挂载 EditDock 与浮动翻页控件的取舍。
+ */
 'use client';
 
 import { useEffect, useMemo } from 'react';
@@ -35,6 +42,7 @@ interface EditChromeRootProps {
  * `scene` is required (non-null). The parent gates mounting on
  * `mode === 'edit' && currentScene` to satisfy this contract.
  */
+// 编辑模式根：按场景能力决定 dock / 翻页控件的挂载组合。
 export function EditChromeRoot({ scene, isEditable, onToggleEditMode }: EditChromeRootProps) {
   // Hosted inside the workbench panel? Then two pieces of chrome are
   // meaningless here: the Pro Switch (the panel is Pro-locked; there is

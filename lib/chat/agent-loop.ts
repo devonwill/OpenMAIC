@@ -13,6 +13,7 @@
 
 import type { StatelessEvent, DirectorState } from '@/lib/types/chat';
 import type { ThinkingConfig } from '@/lib/types/provider';
+import type { KnowledgeSelection } from '@/lib/knowledge/quota';
 import { createLogger } from '@/lib/logger';
 
 const log = createLogger('AgentLoop');
@@ -60,6 +61,8 @@ export interface AgentLoopRequest {
   model?: string;
   providerType?: string;
   thinkingConfig?: ThinkingConfig;
+  /** 图1 勾选的知识库：随每次 /api/chat 请求下发，圈定课堂检索范围。 */
+  knowledge?: KnowledgeSelection;
 }
 
 /** Per-iteration outcome extracted from the done event */
@@ -189,6 +192,7 @@ export async function runAgentLoop(
       model: request.model,
       providerType: request.providerType,
       thinkingConfig: request.thinkingConfig,
+      knowledge: request.knowledge,
     };
 
     // Fetch

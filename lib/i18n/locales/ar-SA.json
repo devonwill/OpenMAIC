@@ -45,7 +45,10 @@
   },
   "home": {
     "slogan": "التعلّم التوليدي في فصل تفاعلي متعدد الوكلاء",
-    "greetingWithName": "مرحبًا، {{name}}"
+    "greetingWithName": "مرحبًا، {{name}}",
+    "setupLLMFirst": "Please configure a large-model provider in System Settings before using {{feature}}.",
+    "workbenchEntry": "Workbench",
+    "enterClassroom": "classroom generation"
   },
   "toolbar": {
     "pdfParser": "محلل PDF",
@@ -563,6 +566,8 @@
       "title": "نص السرد",
       "regenAllTts": "إعادة توليد كل التعليق الصوتي",
       "voiceAll": "صوّت الكل",
+      "cloneVoiceSelect": "اختر الصوت المُستنسخ ثم اضغط «صوّت الكل» لإعادة توليد كل الجُمل به",
+      "cloneVoiceDefault": "الصوت الافتراضي",
       "counts": "{{speech}} سرد · {{cue}} إجراءات",
       "panLeft": "تحريك لليسار",
       "panRight": "تحريك لليمين",
@@ -1167,6 +1172,12 @@
     "webSearching": "بحث في الإنترنت",
     "webSearchingDesc": "جارٍ البحث في الإنترنت عن معلومات محدّثة",
     "webSearchFailed": "فشل البحث في الإنترنت",
+    "citationsTitle": "مصادر هذه الصفحة",
+    "citationsValid": "تم التحقق من {{count}}",
+    "citationsInvalid": "{{count}} غير صالح",
+    "citationReasonNotFound": "غير موجود في قاعدة المعرفة (من المحتمل أن يكون قد اختلقه النموذج)",
+    "citationReasonNotReviewed": "مكتبة المصدر غير مراجعة",
+    "citationReasonOutOfScope": "خارج مكتبات المعرفة المحددة",
     "outlinesReadyCount": "{{ready}} / {{total}} أقسام جاهزة",
     "jumpToBlankTitle": "الانتقال إلى قسم بحاجة إلى عنوان",
     "analyzingMediaMaterial": "تحليل الصوت/الفيديو"
@@ -1905,7 +1916,7 @@
       "download": "تنزيل",
       "detailFailed": "تعذّر تحميل تفاصيل المهارة",
       "contentLabel": "المحتوى",
-      "builtinDetailNote": "هذه المهارة مرفقة مع OpenMAIC. نزّلها لاستيرادها إلى مساحة عمل وكيل أخرى.",
+      "builtinDetailNote": "هذه المهارة مرفقة مع OpenRobotics. نزّلها لاستيرادها إلى مساحة عمل وكيل أخرى.",
       "upload": "رفع",
       "uploading": "جارٍ الرفع…",
       "uploadFailed": "تعذّر رفع المهارة. تحقّق من الملف وحاول مرة أخرى.",
@@ -2062,7 +2073,26 @@
     "badgeEnter": "وضع Pro",
     "badgeExit": "العودة إلى الوضع العادي",
     "launchPlaceholder": "صِف تجربة التعلم التي تريد إنشاءها",
-    "launchSend": "بدء الإنشاء"
+    "launchSend": "بدء الإنشاء",
+    "config": "الإعدادات السريعة",
+    "configModel": "النموذج",
+    "configModelScope": "يُطبَّق على توليد المشاهد وجلسات المحادثة والاختبارات؛ نموذج رد مساحة العمل مثبَّت على الخادم.",
+    "configNoModelProvider": "لا يوجد مزوّدات نماذج مهيّأة — أضِف واحدًا من الإعدادات.",
+    "configVoice": "الصوت",
+    "knowledge": "قاعدة المعرفة",
+    "knowledgeLoading": "جارٍ التحميل…",
+    "knowledgeLoadFailed": "فشل التحميل — فعّل البيانات في صفحة المعرفة أولاً.",
+    "knowledgeEmpty": "لا توجد قواعد معرفية مراجعة بعد — ارفع واحدة في صفحة المعرفة وراجعها.",
+    "knowledgeKindCode": "شيفرة",
+    "knowledgeKindGraph": "رسم بياني",
+    "knowledgeKindPaper": "ورقة",
+    "knowledgeQuota": "حصة الاقتباس (نسبة الأدلة)",
+    "knowledgeQuotaSummary": "محلي {{local}}% · ويب {{web}}% · نموذج {{model}}%",
+    "knowledgeQuotaLocal": "محلي",
+    "knowledgeQuotaWeb": "ويب",
+    "configCloneUse": "استخدام صوتي المستنسخ لجميع المعلمين الأذكياء",
+    "configCloneSelect": "اختيار الصوت المستنسخ",
+    "configCloneEmpty": "لم يُسجَّل صوت مستنسخ بعد — سجّله أولاً في إعدادات الصوت"
   },
   "workbench": {
     "tool": {

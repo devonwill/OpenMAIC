@@ -1,3 +1,10 @@
+/**
+ * 本文件：编辑坞顶部全局编辑条。
+ * 职责：承载作用于整门课程而非单页旁白的入口——左为班级名单、
+ * 中为页面翻页（CanvasPager）、右为元素引用套索按钮。
+ * 关键点：三列网格布局保证翻页器对整个坞居中；折叠时本条仍保持可见可用；
+ * 名单对话框关闭即卸载，每次打开都重新从舞台读取数据。
+ */
 'use client';
 
 /**
@@ -29,6 +36,7 @@ import { ElementRefLassoButton } from './ElementRefLassoButton';
 /** The bar's own height, in px. The dock adds it to whatever the timeline is. */
 export const DOCK_EDIT_BAR_HEIGHT = 36;
 
+/** 编辑坞全局编辑条：名单入口（左）+ 翻页（中）+ 套索（右）。 */
 export function DockEditBar({
   sceneId,
   /** Canvas elements to point at — only a slide has any. */

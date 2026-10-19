@@ -15,6 +15,7 @@ import type {
 import type { AgentInfo } from '@openmaic/generation';
 import type { Scene } from '@/lib/types/stage';
 import type { SpeechAction } from '@/lib/types/action';
+import type { KnowledgeSelection } from '@/lib/knowledge/quota';
 import { splitLongSpeechActions } from '@/lib/audio/tts-utils';
 import { measureAudioDuration } from '@/lib/audio/audio-duration';
 import { isTTSProviderEnabled } from '@/lib/audio/provider-enablement';
@@ -22,6 +23,7 @@ import { resolveAgentVoiceOptions, pickNarratorAgent } from '@/lib/audio/agent-v
 import {
   getEnabledProvidersWithVoices,
   resolveDeterministicFallbackVoice,
+  resolveGlobalCloneOverride,
   resolveNarratorVoiceBinding,
   type ResolvedVoice,
 } from '@/lib/audio/voice-resolver';
@@ -159,6 +161,8 @@ export async function fetchSceneContent(
     agents?: AgentInfo[];
     languageDirective?: string;
     requirements?: Partial<UserRequirements>;
+    /** 图2 chosen 知识库 + three-route citation quota (pass-through to the API). */
+    knowledge?: KnowledgeSelection;
   },
   signal?: AbortSignal,
   retryOptions?: ClientRetryOptions<SceneContentResult>,
@@ -208,6 +212,8 @@ export async function fetchSceneActions(
     previousSpeeches?: string[];
     userProfile?: string;
     languageDirective?: string;
+    /** 图2 chosen 知识库 + three-route citation quota (pass-through to the API). */
+    knowledge?: KnowledgeSelection;
   },
   signal?: AbortSignal,
   retryOptions?: ClientRetryOptions<SceneActionsResult>,
@@ -308,8 +314,47 @@ export async function generateAndStoreTTS(
     );
   };
 
+  // Global clone-voice override (client-side resolution, same as discussion
+  // TTS). Provider membership is all the resolver needs — built-in clone
+  // providers (Qwen/Xiaomi/VoxCPM) are included by getEnabledProvidersWithVoices
+  // without local profiles; clone ids are self-contained.
+  const enabledProviders = getEnabledProvidersWithVoices(settings.ttsProvidersConfig);
+  const cloneOverride = resolveGlobalCloneOverride(
+    {
+      useMyCloneVoice: settings.useMyCloneVoice,
+      myCloneVoiceId: settings.myCloneVoiceId,
+      myCloneVoiceProvider: settings.myCloneVoiceProvider,
+    },
+    enabledProviders,
+  );
+
+  // A deliberate per-agent pick (voice pill / settings override) beats the
+  // global clone default, honored VERBATIM when its provider is enabled — the
+  // same enablement rule as resolveNarratorVoiceBinding, because the narration
+  // provider list is built without local voice profiles (profile-backed clone
+  // ids cannot pass a voice-catalog check here). Bindings already marked dead
+  // are skipped so a fallback retry cannot re-pick the dead voice.
+  const explicitVoice = (() => {
+    if (!teacher) return null;
+    const enabledIds = new Set(enabledProviders.map((p) => p.providerId));
+    for (const choice of [settings.agentVoiceOverrides?.[teacher.id], teacher.voiceConfig]) {
+      if (!choice?.voiceId?.trim() || !enabledIds.has(choice.providerId)) continue;
+      const voice = {
+        providerId: choice.providerId,
+        modelId: resolveTTSModelForVoice(choice.providerId, choice.voiceId, choice.modelId),
+        voiceId: choice.voiceId,
+      };
+      if (!isVoiceBindingUnavailable(voice)) return voice;
+    }
+    return null;
+  })();
+
   let resolvedVoice =
+    // An internal retry voice always wins: a dead-clone fallback must not be
+    // re-routed back to the same global clone voice.
     overrideVoice ??
+    explicitVoice ??
+    cloneOverride ??
     resolveNarratorVoiceBinding(
       boundVoice && isVoiceBindingUnavailable(boundVoice) ? undefined : boundVoice,
       {
@@ -452,6 +497,69 @@ export async function generateAndStoreTTS(
           }
         }
       }
+    }
+    // Same single-hop recovery for a dead GLOBAL clone override: the binding
+    // machinery above never sees the override, so handle it here rather than
+    // failing narration (silent fallback — the discussion hook owns the toast).
+    if (
+      errorCode === 'QWEN_VC_VOICE_NOT_FOUND' &&
+      cloneOverride &&
+      !overrideVoice &&
+      fallbackHops < MAX_NARRATOR_VOICE_FALLBACK_HOPS &&
+      voiceBindingKey(resolvedVoice) === voiceBindingKey(cloneOverride)
+    ) {
+      const cloneKey = voiceBindingKey(cloneOverride);
+      markVoiceBindingUnavailable(cloneOverride);
+      markVoiceBindingNoticeShown(cloneKey);
+      const fallbackVoice = resolveDeterministicFallbackVoice(
+        getEnabledProvidersWithVoices(settings.ttsProvidersConfig),
+        0,
+      );
+      if (fallbackVoice) {
+        return generateAndStoreTTS(
+          requestId,
+          text,
+          language,
+          signal,
+          retryOptions,
+          existingAudioId,
+          stageId,
+          fallbackVoice,
+          fallbackHops + 1,
+        );
+      }
+    }
+    // Single-hop recovery for a dead EXPLICIT per-agent clone: the binding
+    // machinery above only knows the registry pin, and the global-override
+    // handler only the global voice — a deliberate pill pick deleted server-
+    // side would otherwise fail narration outright. Mark it dead (the
+    // resolver skips dead bindings) and retry once: the next resolution
+    // falls through to the global clone / narrator binding. Skipped when the
+    // bound/global handlers already covered this exact voice.
+    if (
+      errorCode === 'QWEN_VC_VOICE_NOT_FOUND' &&
+      explicitVoice &&
+      !overrideVoice &&
+      fallbackHops < MAX_NARRATOR_VOICE_FALLBACK_HOPS &&
+      voiceBindingKey(resolvedVoice) === voiceBindingKey(explicitVoice) &&
+      (!boundKey || voiceBindingKey(explicitVoice) !== boundKey)
+    ) {
+      const explicitKey = voiceBindingKey(explicitVoice);
+      markVoiceBindingUnavailable(explicitVoice);
+      if (markVoiceBindingNoticeShown(explicitKey)) {
+        toast.warning(getClientTranslation('settings.qwenCloneNarrationUnavailable'));
+      }
+      return generateAndStoreTTS(
+        requestId,
+        text,
+        language,
+        signal,
+        retryOptions,
+        existingAudioId,
+        stageId,
+        undefined,
+        fallbackHops + 1,
+      );
     }
     throw error;
   }
@@ -751,6 +859,8 @@ export interface GenerationParams {
   languageDirective?: string;
   /** Vocational task-engine flag; gates procedural-skill generation server-side (see resolveVocationalActive). */
   taskEngineMode?: boolean;
+  /** 图2 chosen 知识库 + three-route citation quota, threaded to scene-content. */
+  knowledge?: KnowledgeSelection;
 }
 
 export function useSceneGenerator(options: UseSceneGeneratorOptions = {}) {
@@ -864,6 +974,7 @@ export function useSceneGenerator(options: UseSceneGeneratorOptions = {}) {
               stageInfo: params.stageInfo,
               agents: params.agents,
               languageDirective: params.languageDirective,
+              knowledge: params.knowledge,
               ...(params.taskEngineMode ? { requirements: { taskEngineMode: true } } : {}),
             },
             signal,
@@ -960,6 +1071,7 @@ export function useSceneGenerator(options: UseSceneGeneratorOptions = {}) {
               previousSpeeches,
               userProfile: params.userProfile,
               languageDirective: params.languageDirective,
+              knowledge: params.knowledge,
             },
             signal,
           );
@@ -1118,6 +1230,7 @@ export function useSceneGenerator(options: UseSceneGeneratorOptions = {}) {
             stageInfo: params.stageInfo,
             agents: params.agents,
             languageDirective: params.languageDirective,
+            knowledge: params.knowledge,
             ...(params.taskEngineMode ? { requirements: { taskEngineMode: true } } : {}),
           },
           signal,
@@ -1147,6 +1260,7 @@ export function useSceneGenerator(options: UseSceneGeneratorOptions = {}) {
             previousSpeeches,
             userProfile: params.userProfile,
             languageDirective: params.languageDirective,
+            knowledge: params.knowledge,
           },
           signal,
         );

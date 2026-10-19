@@ -1,3 +1,11 @@
+/**
+ * 本文件：回放态的独立渲染器画布（基于 @openmaic/renderer）。
+ * 职责：用 SlideCanvas 渲染整页幻灯片，注入图片/视频的媒体
+ *       状态占位与重试入口，并把高亮/聚光/激光/缩放状态
+ *       组装为 effects 传给渲染器。
+ * 关键点：媒体状态分支（pending/disabled/failed/ready）与 DOM 版
+ *       画布保持同一表现；视频播放仍由 canvas store 统一驱动。
+ */
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react';
@@ -18,6 +26,10 @@ import { SCREEN_ELEMENT_ID_PREFIX } from '../element-dom';
 
 const log = createLogger('RendererScreenCanvas');
 
+/**
+ * 回放态视频内容：按媒体解析状态渲染占位或视频；
+ * 不自动播放，仅在 store 播放 id 指向自己时播放。
+ */
 function PlaybackVideoContent({
   element,
   media,
@@ -81,7 +93,7 @@ function PlaybackVideoContent({
 
   if (showSkeleton) {
     return (
-      <div className="flex h-full w-full items-center justify-center rounded bg-gradient-to-br from-indigo-50 via-violet-50/60 to-blue-50 dark:from-indigo-950/40 dark:via-violet-950/30 dark:to-blue-950/20">
+      <div className="flex h-full w-full items-center justify-center rounded bg-gradient-to-br from-indigo-50 via-blue-50/60 to-sky-50 dark:from-indigo-950/40 dark:via-blue-950/30 dark:to-sky-950/20">
         <div className="relative h-14 w-14">
           <div className="absolute inset-0 animate-pulse rounded-full border-2 border-indigo-300/40 dark:border-indigo-500/30" />
           <Film
@@ -187,6 +199,10 @@ function PlaybackVideoContent({
 
 export type PlaybackImageState = 'ready' | 'pending' | 'failed' | 'disabled';
 
+/**
+ * 把媒体解析状态归并为回放图片的四态，供渲染分支统一判断。
+ * 中文：failed/disabled 优先于 pending，placeholder 视为待生成。
+ */
 export function getPlaybackImageState(resolution: MediaResolution): PlaybackImageState {
   if (resolution.kind === 'failed') return 'failed';
   if (resolution.kind === 'disabled') return 'disabled';
@@ -194,6 +210,10 @@ export function getPlaybackImageState(resolution: MediaResolution): PlaybackImag
   return 'ready';
 }
 
+/**
+ * 回放态图片内容：非就绪态用占位图覆盖，就绪态在默认渲染
+ * 之上叠加可重试按钮（若媒体可重试）。
+ */
 export function PlaybackImageContent({
   element,
   defaultContent,
@@ -298,6 +318,12 @@ export function PlaybackImageContent({
   );
 }
 
+/**
+ * 渲染器版回放画布：解析整页媒体后交给 SlideCanvas 绘制，
+ * 并将 store 中的演示特效状态映射为 SlideEffects。
+ * 中文：scale 变化经 onScaleChange 回写 store，保持与
+ *       视口同步逻辑一致。
+ */
 export function RendererScreenCanvas() {
   const { sceneId } = useSceneData<SlideContent>();
   const slide = useSceneSelector<SlideContent, SlideContent['canvas']>((content) => content.canvas);

@@ -1,3 +1,10 @@
+/**
+ * 本文件：系统通知节点组件。
+ * 职责：以最安静的版式渲染任务自身的状态消息（恢复、排队、失败等），
+ * 含图标、摘要、重复计数、提示与可展开的技术细节。
+ * 关键点：不是聊天气泡也不是整段红字日志；data-tone 决定边框强度，
+ * error 摘要附加 role=alert 供读屏播报。
+ */
 'use client';
 
 /**
@@ -26,6 +33,7 @@ const TONE_ICON = {
   error: CircleAlert,
 } as const;
 
+// stopped 语调属于居中字幕，不会到此组件；兜底用 info 图标避免空渲染。
 export function SystemNode({
   node,
   repeat = 1,

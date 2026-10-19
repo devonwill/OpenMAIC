@@ -34,7 +34,9 @@ async function freshStore(persistedState?: Record<string, unknown>) {
   vi.resetModules();
   storage.clear();
   if (persistedState) {
-    await persistKv.set('settings-storage', { state: persistedState, version: 4 }, 'account');
+    // Current blob version: this file exercises pure rehydration/merge — the
+    // migrate ladder itself is covered by settings-clone-voice-default.test.ts.
+    await persistKv.set('settings-storage', { state: persistedState, version: 5 }, 'account');
   }
   const { useSettingsStore } = await import('@/lib/store/settings');
   // persist hydrates asynchronously now that it reads through the KVStore —

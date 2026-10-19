@@ -1,3 +1,11 @@
+/**
+ * 本文件：把动画描述符（AnimationDescriptor）适配为 motion/react 可用
+ *       的 initial/animate/exit/transition 配置。
+ * 职责：解析轨道（track）的起止值、几何引用与参数占位符，
+ *       按 enter/exit 阶段拆分成初始态、目标态与退场态。
+ * 关键点：时长/延迟统一由毫秒换算为秒；带 repeat 的轨道写成
+ *       [from, to] 关键帧；解析失败会抛错而非静默降级。
+ */
 import type { Target, TargetAndTransition, Transition } from 'motion/react';
 import type { AnimatableValue, AnimationDescriptor, GeometryRef, Track } from '@/lib/choreography';
 
@@ -38,6 +46,10 @@ function requireGeometry(ref: GeometryRef, geometry: Partial<Record<GeometryRef,
   return value;
 }
 
+/**
+ * 解析单个动画轨道的起止值：支持数字、带 {参数} 占位的字符串、
+ * 几何引用（ref，按 scale/offset 线性换算）与阈值条件分支。
+ */
 function resolveValue(
   value: AnimatableValue,
   geometry: Partial<Record<GeometryRef, number>>,
@@ -112,6 +124,11 @@ function requireParameter(name: string, params: Params, descriptorId: string): s
   return value;
 }
 
+/**
+ * 将描述符的动画轨道转为 motion/react 的四元配置。
+ * 中文：exit 轨道单独归入退场目标与退场过渡，其余按是否
+ *       repeat 决定写入 initial+animate 还是 [from,to] 关键帧。
+ */
 export function resolveMotionLayer(
   descriptor: AnimationDescriptor,
   layerId: string,

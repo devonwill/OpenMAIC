@@ -131,7 +131,7 @@
   line-height: 1.35;
 }
 
-.ws-root .pro-move-to-folder-popover .text-violet-500 {
+.ws-root .pro-move-to-folder-popover .text-blue-500 {
   color: var(--ws-accent);
 }
 
@@ -160,7 +160,7 @@
   color: var(--ws-ink);
 }
 
-.ws-root .pro-theme-popover > button.bg-purple-50 {
+.ws-root .pro-theme-popover > button.bg-blue-50 {
   background: var(--ws-accent-wash);
   color: var(--ws-accent);
 }

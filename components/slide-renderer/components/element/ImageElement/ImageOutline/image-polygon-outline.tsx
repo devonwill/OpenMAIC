@@ -1,3 +1,8 @@
+/**
+ * 本文件：图片多边形描边组件。
+ * 职责：用外部传入的 createPath 生成路径并绘制描边，适配任意多边形裁剪。
+ * 关键点：路径按当前宽高实时生成，元素缩放后轮廓随之更新。
+ */
 'use client';
 
 import type { PPTElementOutline } from '@openmaic/dsl';

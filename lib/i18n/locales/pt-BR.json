@@ -45,7 +45,10 @@
   },
   "home": {
     "slogan": "Aprendizagem Generativa em Sala de Aula Interativa Multi-Agente",
-    "greetingWithName": "Olá, {{name}}"
+    "greetingWithName": "Olá, {{name}}",
+    "setupLLMFirst": "Please configure a large-model provider in System Settings before using {{feature}}.",
+    "workbenchEntry": "Workbench",
+    "enterClassroom": "classroom generation"
   },
   "toolbar": {
     "pdfParser": "Analisador",
@@ -548,6 +551,8 @@
       "title": "Roteiro de narração",
       "regenAllTts": "Regenerar toda a narração",
       "voiceAll": "Narrar tudo",
+      "cloneVoiceSelect": "Escolha uma voz clonada; “Narrar tudo” re-sintetiza todas as falhas com ela",
+      "cloneVoiceDefault": "Voz padrão",
       "counts": "{{speech}} narração · {{cue}} ações",
       "panLeft": "Mover para a esquerda",
       "panRight": "Mover para a direita",
@@ -1167,6 +1172,12 @@
     "webSearching": "Buscando na Web",
     "webSearchingDesc": "Pesquisando informações atualizadas na web",
     "webSearchFailed": "Falha na pesquisa na web",
+    "citationsTitle": "Fontes desta página",
+    "citationsValid": "{{count}} verificadas",
+    "citationsInvalid": "{{count}} inválidas",
+    "citationReasonNotFound": "Não encontrado na base de conhecimentos (provavelmente inventado)",
+    "citationReasonNotReviewed": "Biblioteca de origem não revisada",
+    "citationReasonOutOfScope": "Fora das bibliotecas selecionadas",
     "outlinesReadyCount": "{{ready}} / {{total}} seções prontas",
     "jumpToBlankTitle": "Ir para uma seção que ainda precisa de título",
     "analyzingMediaMaterial": "Analisando áudio/vídeo"
@@ -1905,7 +1916,7 @@
       "download": "Baixar",
       "detailFailed": "Não foi possível carregar os detalhes do skill",
       "contentLabel": "Conteúdo",
-      "builtinDetailNote": "Este skill acompanha o OpenMAIC. Baixe-o para importar em outro espaço de trabalho de agente.",
+      "builtinDetailNote": "Este skill acompanha o OpenRobotics. Baixe-o para importar em outro espaço de trabalho de agente.",
       "upload": "Enviar",
       "uploading": "Enviando…",
       "uploadFailed": "Não foi possível enviar o skill. Verifique o arquivo e tente novamente.",
@@ -2062,7 +2073,26 @@
     "badgeEnter": "Modo Pro",
     "badgeExit": "Voltar ao modo clássico",
     "launchPlaceholder": "Descreva a experiência de aprendizagem que você quer criar",
-    "launchSend": "Iniciar construção"
+    "launchSend": "Iniciar construção",
+    "config": "Configuração rápida",
+    "configModel": "Modelo",
+    "configModelScope": "Aplica-se à geração de cenas, sessões de chat e questionários; o modelo de resposta da área de trabalho é fixado no servidor.",
+    "configNoModelProvider": "Nenhum provedor de modelo configurado — adicione um em Configurações.",
+    "configVoice": "Voz",
+    "knowledge": "Base de conhecimentos",
+    "knowledgeLoading": "Carregando…",
+    "knowledgeLoadFailed": "Falha ao carregar — ative os dados na página de Conhecimentos primeiro.",
+    "knowledgeEmpty": "Nenhuma base de conhecimentos revisada — envie uma na página de Conhecimentos e revise-a.",
+    "knowledgeKindCode": "Código",
+    "knowledgeKindGraph": "Grafo",
+    "knowledgeKindPaper": "Artigo",
+    "knowledgeQuota": "Cota de citação (proporção de evidências)",
+    "knowledgeQuotaSummary": "Local {{local}}% · Web {{web}}% · Modelo {{model}}%",
+    "knowledgeQuotaLocal": "Local",
+    "knowledgeQuotaWeb": "Web",
+    "configCloneUse": "Usar minha voz clonada para todos os professores de IA",
+    "configCloneSelect": "Selecionar voz clonada",
+    "configCloneEmpty": "Nenhuma voz clonada registrada — registre-a primeiro nas configurações de voz"
   },
   "workbench": {
     "tool": {

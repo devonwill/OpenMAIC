@@ -1,3 +1,9 @@
+/**
+ * 本文件：只读幻灯片缩略图组件。
+ * 职责：以固定尺寸或自适应方式渲染整页缩略图，处理懒加载占位，
+ *       并为图片/视频媒体提供待生成、失败、禁用等状态的缩略图表现与重试入口。
+ * 关键点：媒体状态分支较多，缩略图不承载交互（pointer-events 关闭），仅重试按钮可点。
+ */
 'use client';
 
 import type { CSSProperties, ReactNode } from 'react';
@@ -200,6 +206,9 @@ function renderThumbnailImage(
  * scene sidebar, the home-page recent-course cards, and the editor nav rail
  * (which renders through `SceneThumbnailContent`). The full-size editing canvas
  * is intentionally untouched (`@openmaic/renderer` v1 is read-only; editing is v2).
+ *
+ * 中文：面向所有只读缩略图场景；媒体经 useResolvedSlideMedia 解析后
+ * 交给 SlideCanvas 绘制，媒体失败时按可重试性显示提示与重试按钮。
  */
 export function SlideThumbnail({
   slide,

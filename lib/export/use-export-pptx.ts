@@ -42,7 +42,13 @@ import { lookupMediaTask, resolveVideoMediaForElement } from '@/lib/media/media-
 
 const log = createLogger('ExportPPTX');
 
-const DEFAULT_FONT_SIZE = 16;
+// 页标题默认字号（画布 px）：32px 按 1px = 0.72pt 导出为 23pt，对应生成规范「页标题 32px」
+const TITLE_FONT_SIZE = 32;
+// 副标题默认字号（画布 px）：26px 导出为 19pt，介于标题与正文之间
+const SUBTITLE_FONT_SIZE = 26;
+// 默认正文字号（画布 px）：20px 按 1px = 0.72pt 导出为 14pt，即「默认正文 20px」
+// 特殊场景（代码、文字密集）下限 16px→12pt，由生成规范显式 font-size 控制，此处仅兜底
+const DEFAULT_FONT_SIZE = 20;
 const DEFAULT_FONT_FAMILY = 'Microsoft YaHei';
 
 // ── Color formatting ──
@@ -61,7 +67,7 @@ type FormatColor = ReturnType<typeof formatColor>;
 
 // ── HTML → pptxgenjs TextProps ──
 
-function formatHTML(html: string, ratioPx2Pt: number) {
+function formatHTML(html: string, ratioPx2Pt: number, defaultFontSizePx: number = DEFAULT_FONT_SIZE) {
   const ast = toAST(html);
   let bulletFlag = false;
   let indent = 0;
@@ -124,7 +130,8 @@ function formatHTML(html: string, ratioPx2Pt: number) {
         const options: pptxgen.TextPropsOptions = {};
 
         if (styleObj['font-size']) {
-          options.fontSize = parseInt(styleObj['font-size']) / ratioPx2Pt;
+          // 取整到整 pt，使画布 32/26/20/16px 恰好导出为 23/19/14/12pt
+          options.fontSize = Math.round(parseInt(styleObj['font-size']) / ratioPx2Pt);
         }
         if (styleObj['color']) {
           options.color = formatColor(styleObj['color']).color;
@@ -167,14 +174,15 @@ function formatHTML(html: string, ratioPx2Pt: number) {
         if (bulletFlag && styleObj['list-type'] === 'ol') {
           options.bullet = {
             type: 'number',
-            indent: (options.fontSize || DEFAULT_FONT_SIZE) * 1.25,
+            // indent 单位是 pt：兜底值也需从画布 px 换算成 pt，避免 px/pt 混用
+            indent: (options.fontSize || Math.round(defaultFontSizePx / ratioPx2Pt)) * 1.25,
           };
           options.paraSpaceBefore = 0.1;
           bulletFlag = false;
         }
         if (bulletFlag && styleObj['list-type'] === 'ul') {
           options.bullet = {
-            indent: (options.fontSize || DEFAULT_FONT_SIZE) * 1.25,
+            indent: (options.fontSize || Math.round(defaultFontSizePx / ratioPx2Pt)) * 1.25,
           };
           options.paraSpaceBefore = 0.1;
           bulletFlag = false;
@@ -581,13 +589,21 @@ export async function buildPptxBlob(
     for (const el of slide.elements) {
       // ── TEXT ──
       if (el.type === 'text') {
-        const textProps = formatHTML(el.content, ratioPx2Pt);
+        // 无显式字号时按文本类型三分流兜底：标题 32px→23pt、副标题 26px→19pt、正文 20px→14pt
+        // 显式 inline font-size 会在 formatHTML 内覆盖，不受此兜底影响
+        const defaultSizePx =
+          el.textType === 'title'
+            ? TITLE_FONT_SIZE
+            : el.textType === 'subtitle'
+              ? SUBTITLE_FONT_SIZE
+              : DEFAULT_FONT_SIZE;
+        const textProps = formatHTML(el.content, ratioPx2Pt, defaultSizePx);
         const options: pptxgen.TextPropsOptions = {
           x: el.left / ratioPx2Inch,
           y: el.top / ratioPx2Inch,
           w: el.width / ratioPx2Inch,
           h: el.height / ratioPx2Inch,
-          fontSize: DEFAULT_FONT_SIZE / ratioPx2Pt,
+          fontSize: Math.round(defaultSizePx / ratioPx2Pt),
           fontFace: el.defaultFontName || DEFAULT_FONT_FAMILY,
           color: '#000000',
           valign: 'top',
@@ -596,6 +612,8 @@ export async function buildPptxBlob(
           lineSpacingMultiple: 1.5 / 1.25,
           autoFit: true,
         };
+        // 页标题默认加粗：run 级显式 font-weight（formatHTML 内设置）优先于此兜底
+        if (el.textType === 'title') options.bold = true;
         if (el.rotate) options.rotate = el.rotate;
         if (el.wordSpace) options.charSpacing = el.wordSpace / ratioPx2Pt;
         if (el.lineHeight) options.lineSpacingMultiple = el.lineHeight / 1.25;
@@ -776,7 +794,7 @@ export async function buildPptxBlob(
             y: el.top / ratioPx2Inch,
             w: el.width / ratioPx2Inch,
             h: el.height / ratioPx2Inch,
-            fontSize: DEFAULT_FONT_SIZE / ratioPx2Pt,
+            fontSize: Math.round(DEFAULT_FONT_SIZE / ratioPx2Pt),
             fontFace: DEFAULT_FONT_FAMILY,
             color: '#000000',
             paraSpaceBefore: 5 / ratioPx2Pt,
@@ -980,7 +998,11 @@ export async function buildPptxBlob(
               align: cell.style?.align || 'left',
               valign: 'middle',
               fontFace: cell.style?.fontname || DEFAULT_FONT_FAMILY,
-              fontSize: (cell.style?.fontsize ? parseInt(cell.style.fontsize) : 14) / ratioPx2Pt,
+              // 无 fontsize 的单元格兜底 20px（≈14pt），与默认正文字号一致
+              fontSize: Math.round(
+                (cell.style?.fontsize ? parseInt(cell.style.fontsize) : DEFAULT_FONT_SIZE) /
+                  ratioPx2Pt,
+              ),
             };
             if (theme && themeColor) {
               let c: FormatColor;

@@ -45,7 +45,10 @@
   },
   "home": {
     "slogan": "多智能體互動課室中的生成式學習",
-    "greetingWithName": "嗨，{{name}}"
+    "greetingWithName": "嗨，{{name}}",
+    "setupLLMFirst": "Please configure a large-model provider in System Settings before using {{feature}}.",
+    "workbenchEntry": "Workbench",
+    "enterClassroom": "classroom generation"
   },
   "toolbar": {
     "pdfParser": "解析器",
@@ -491,6 +494,8 @@
       "title": "講解腳本",
       "regenAllTts": "重新生成全部配音",
       "voiceAll": "全部配音",
+      "cloneVoiceSelect": "選擇克隆音色，點「全部配音」按該音色重新配音",
+      "cloneVoiceDefault": "預設音色",
       "counts": "{{speech}} 旁白 · {{cue}} 提示",
       "panLeft": "向左平移",
       "panRight": "向右平移",
@@ -1152,6 +1157,12 @@
     "webSearching": "網路搜尋",
     "webSearchingDesc": "正在搜尋網路取得最新資料",
     "webSearchFailed": "網路搜尋失敗",
+    "citationsTitle": "本頁引用",
+    "citationsValid": "已驗證 {{count}} 條",
+    "citationsInvalid": "無效 {{count}} 條",
+    "citationReasonNotFound": "知識庫中不存在（可能為模型編造）",
+    "citationReasonNotReviewed": "來源庫未通過審核",
+    "citationReasonOutOfScope": "不在勾選的知識庫範圍內",
     "outlinesReadyCount": "{{ready}} / {{total}} 章節就緒",
     "jumpToBlankTitle": "跳至待補充標題的章節",
     "analyzingMediaMaterial": "解析音影片內容"
@@ -1890,7 +1901,7 @@
       "download": "下載",
       "detailFailed": "技能詳情載入失敗",
       "contentLabel": "正文",
-      "builtinDetailNote": "該技能隨 OpenMAIC 提供。下載後可匯入其他智能體工作台。",
+      "builtinDetailNote": "該技能隨 OpenRobotics 提供。下載後可匯入其他智能體工作台。",
       "upload": "上傳",
       "uploading": "正在上傳…",
       "uploadFailed": "技能上傳失敗。請檢查檔案後重試。",
@@ -2062,7 +2073,26 @@
     "badgeEnter": "專業模式",
     "badgeExit": "返回普通模式",
     "launchPlaceholder": "描述你想創造的學習體驗",
-    "launchSend": "開始構建"
+    "launchSend": "開始構建",
+    "config": "快捷設定",
+    "configModel": "模型",
+    "configModelScope": "作用於場景生成、對話會話與測驗；工作臺回覆模型由伺服器端固定。",
+    "configNoModelProvider": "暫無已設定的模型提供方，請先在「設定」中新增。",
+    "configVoice": "聲音",
+    "knowledge": "知識庫",
+    "knowledgeLoading": "載入中…",
+    "knowledgeLoadFailed": "載入失敗，請先在知識頁啟用資料。",
+    "knowledgeEmpty": "尚無已審核的知識庫，可在知識頁上傳並審核。",
+    "knowledgeKindCode": "程式碼",
+    "knowledgeKindGraph": "圖譜",
+    "knowledgeKindPaper": "論文",
+    "knowledgeQuota": "引用配額（證據占比）",
+    "knowledgeQuotaSummary": "本機 {{local}}% · 聯網 {{web}}% · 模型 {{model}}%",
+    "knowledgeQuotaLocal": "本機",
+    "knowledgeQuotaWeb": "聯網",
+    "configCloneUse": "所有 AI 教師統一使用我的克隆聲音",
+    "configCloneSelect": "選擇克隆聲音",
+    "configCloneEmpty": "尚未註冊克隆聲音，請先在語音設定中註冊"
   },
   "workbench": {
     "tool": {

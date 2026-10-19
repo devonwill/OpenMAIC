@@ -1,3 +1,9 @@
+/**
+ * 本文件：表格行列数选择网格。
+ * 职责：6×8 网格 hover/focus 预览行列尺寸，点击确认后回调 onPick(rows, columns)。
+ * 关键点：active 高亮按"左上矩形"规则（rows/columns 均不大于当前 size）；
+ * onMouseEnter 与 onFocus 同步 size，兼顾鼠标与键盘操作。
+ */
 'use client';
 
 import { useState } from 'react';
@@ -10,7 +16,11 @@ interface TableInsertPickerProps {
   readonly getLabel: (rows: number, columns: number) => string;
 }
 
-/** Grid picker for choosing a new table's row and column count. */
+/**
+ * Grid picker for choosing a new table's row and column count.
+ * 中文要点：网格尺寸由 MAX_ROWS/MAX_COLUMNS 常量决定，label 文案由外部
+ * getLabel 提供（组件本身不依赖 i18n）。
+ */
 export function TableInsertPicker({ onPick, getLabel }: TableInsertPickerProps) {
   const [size, setSize] = useState({ rows: 1, columns: 1 });
 
@@ -36,8 +46,8 @@ export function TableInsertPicker({ onPick, getLabel }: TableInsertPickerProps) 
                 onClick={() => onPick(rows, columns)}
                 className={
                   active
-                    ? 'aspect-square rounded-sm border border-violet-500 bg-violet-500'
-                    : 'aspect-square rounded-sm border border-zinc-300 bg-white hover:border-violet-400 hover:bg-violet-100 dark:border-zinc-600 dark:bg-zinc-800 dark:hover:border-violet-400 dark:hover:bg-violet-500/20'
+                    ? 'aspect-square rounded-sm border border-blue-500 bg-blue-500'
+                    : 'aspect-square rounded-sm border border-zinc-300 bg-white hover:border-blue-400 hover:bg-blue-100 dark:border-zinc-600 dark:bg-zinc-800 dark:hover:border-blue-400 dark:hover:bg-blue-500/20'
                 }
               />
             );

@@ -1,3 +1,10 @@
+/**
+ * 本文件：ECharts 图表的挂载与更新组件。
+ * 职责：初始化 SVG 渲染的 ECharts 实例，监听容器尺寸变化自动
+ *       resize，并在数据/样式 props 变化时刷新 option。
+ * 关键点：主题色不足 10 个时用 tinycolor 生成相近色补足；
+ *       实例仅初始化一次（init-only effect），更新走 setOption。
+ */
 'use client';
 
 import { useEffect, useRef, useMemo } from 'react';
@@ -31,6 +38,10 @@ interface ChartProps {
   options?: ChartOptions;
 }
 
+/**
+ * 图表容器组件：持有 ECharts 实例，外部只传数据与样式。
+ * 用 SVG 渲染器便于导出/缩放时保持矢量清晰。
+ */
 export function Chart({
   width: _width,
   height: _height,
@@ -45,6 +56,8 @@ export function Chart({
   const chartInstance = useRef<echarts.ECharts | null>(null);
 
   // Generate theme colors
+  // 配色需恒为 10 色：>=10 直接用；只有 1 色时生成 10 个相近色；
+  // 多色时保留前 len-1 个、从末色扩展补足，保证多序列颜色稳定不跳变
   const themeColors = useMemo(() => {
     let colors: string[] = [];
     if (rawThemeColors.length >= 10) {

@@ -1,3 +1,8 @@
+/**
+ * 本文件：只读文本元素组件（放映/缩略图/导出侧）。
+ * 职责：按元素数据输出静态文本 DOM，样式与编辑态保持一致。
+ * 关键点：内容经 dangerouslySetInnerHTML 注入，HTML 来自幻灯片数据本身。
+ */
 'use client';
 
 import type { PPTTextElement } from '@openmaic/dsl';

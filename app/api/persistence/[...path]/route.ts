@@ -1,3 +1,4 @@
+import { canReadMedia, readMediaPolicy, ownerBoundAssetStore } from '@/lib/sharing/media-store';
 import { randomUUID } from 'node:crypto';
 import type { IncomingMessage, RequestListener, ServerResponse } from 'node:http';
 import { Readable } from 'node:stream';
@@ -88,6 +89,7 @@ async function createPersistenceHandler(
   ownerId: string,
   access: DocumentAccess,
   poolFactory?: PersistencePoolFactory,
+  assetId?: string,
 ): Promise<RequestListener> {
   const { pool, runtimeStore, assetStore } = await getServerPersistenceProvider(
     connectionString,
@@ -99,49 +101,11 @@ async function createPersistenceHandler(
     validateScene: validateAppScene,
     validateStage: validateAppStage,
   });
-  // The asset posture, precisely.
-  //
-  // Reading an asset and allocating one are open to any caller this deployment
-  // lets in, exactly as reading a document and creating one already are: assets
-  // live in a single shared partition by design (see the SHARED_ASSET_PRINCIPAL
-  // comment in lib/persistence/server-auth.ts), so there is nothing per-caller
-  // for the development authenticator to decide about them, and routing them
-  // through it made every asset request fail in a production build that had not
-  // opted into that authenticator — the build this project's own
-  // server-persistence recipe produces.
-  //
-  // Replacing and deleting are refused outright — to everyone, authenticated or
-  // not. Those operations scope by principal key alone, and every caller
-  // resolves to the same shared key, so authentication decides nothing here:
-  // any signed-in visitor who learned an id, and a document read hands out
-  // every id its slides name, could overwrite or destroy another author's
-  // media. There is no per-asset ownership to check against yet, and since this
-  // application began storing generated media the registry is the only copy a
-  // course has, so the answer is no mutations at all. Nothing in the app
-  // performs an asset PUT or DELETE, and none needs to: the server owns the
-  // entry lifecycle. A document write records what that document claims in the
-  // reference table and commits the allocations it names; deleting the document
-  // withdraws those claims; the collector's entry pass releases an entry whose
-  // last claim left longer ago than the grace period, and an allocation no
-  // document ever claimed once its pending TTL expires. The bytes follow after
-  // their own grace.
-  //
-  // What this is NOT: a per-caller access control. The deployment-level fence
-  // is the access code. Allocation is bounded by the asset store's per-principal
-  // quota, which with one shared principal is a deployment-wide cap.
-  //
-  // Runtime requests still take their partition key from a client-supplied
-  // header, because a runtime session genuinely is per-learner state. Before
-  // runtime routes carry production data, their authenticator must be replaced
-  // with real session verification.
-  // Reclamation is not scheduled from here, and must not be: a route module
-  // has no once-per-process guarantee and no shutdown hook. AssetCollector
-  // runs from instrumentation.ts instead, over the byte store this same
-  // lib/persistence/asset-byte-store selection produces, so the collector
-  // always deletes through the layer the request path wrote through. The
-  // document store this handler mounts is the other half of that mechanism:
-  // createOwnerBoundDocumentStore builds it with reference tracking on, which
-  // is what gives the entry pass something to read.
+  // Shared byte storage is an implementation detail. Per-resource ACLs guard
+  // reads, while replacement/deletion remain collector-only operations.
+  // Managed resources use direct, uncacheable responses so withdrawing access
+  // does not leave a signed object-store URL usable until its expiry.
+  const managedAsset = assetId ? await readMediaPolicy(pool, 'asset', assetId) : null;
   const byteEgress = indirectEgressWithinGrace(
     configuredAssetByteEgress(process.env.ASSET_BYTE_EGRESS),
   );
@@ -155,6 +119,11 @@ async function createPersistenceHandler(
     },
     authorizeAssets: async (_principal, request) => {
       const method = (request.method ?? 'GET').toUpperCase();
+      if (method === 'GET' || method === 'HEAD') {
+        const pathname = new URL(request.url ?? '/', 'http://localhost').pathname;
+        const id = pathname.slice('/assets/'.length).split('/')[0];
+        if (id && pathname.startsWith('/assets/')) return canReadMedia(pool, 'asset', decodeURIComponent(id), ownerId);
+      }
       // Reads and allocations for everyone; mutations for nobody, because the
       // principal they would be scoped to is shared and therefore proves
       // nothing about who is asking.
@@ -166,8 +135,8 @@ async function createPersistenceHandler(
     validateScene: validateAppScene,
     validateStage: validateAppStage,
     payloadValidators: APP_RUNTIME_PAYLOAD_VALIDATORS,
-    assetStore,
-    ...(byteEgress === undefined ? {} : { byteEgress }),
+    assetStore: ownerBoundAssetStore(assetStore, pool, ownerId),
+    ...(managedAsset ? { byteEgress: 'direct' as const } : byteEgress === undefined ? {} : { byteEgress }),
   });
 }
 
@@ -383,9 +352,11 @@ async function handlePersistenceRequestInner(
         access === 'not-found'
           ? jsonError(404, 'DOCUMENT_NOT_FOUND', '@openmaic/storage: document not found')
           : await runNodeHandler(
-              await createPersistenceHandler(connectionString, ownerId, access, deps.poolFactory),
+              await createPersistenceHandler(connectionString, ownerId, access, deps.poolFactory,
+                path.startsWith('/assets/') ? decodeURIComponent(path.slice('/assets/'.length).split('/')[0]) : undefined),
               request,
             );
+      if (path.startsWith('/assets/')) response.headers.set('Cache-Control', 'private, no-store');
       for (const [name, value] of responseHeaders.entries()) response.headers.append(name, value);
       return response;
     } catch (error) {

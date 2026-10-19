@@ -1,3 +1,4 @@
+import { registerAssetOwner } from '@/lib/sharing/media-store';
 import { AssetQuotaExceededError, type AssetStore } from '@openmaic/storage';
 
 import { SHARED_ASSET_PRINCIPAL } from '@/lib/persistence/server-auth';
@@ -115,6 +116,11 @@ export async function storeGeneratedAsset(
       new Blob([part], { type: input.mimeType }),
       meta,
     );
+    if (!input.assetStore) {
+      const { pool } = await getServerPersistenceProvider(process.env.DATABASE_URL ?? '');
+      const owner = await pool.query<{ owner_id: string }>('SELECT owner_id FROM stage_meta WHERE stage_id=$1 AND deleted_at IS NULL', [input.stageId]);
+      if (owner.rows[0]) await registerAssetOwner(pool, assetId, owner.rows[0].owner_id);
+    }
     return { status: 'stored', assetId };
   } catch (error) {
     if (isStorageFull(error)) return { status: 'refused', reason: 'storage-full' };

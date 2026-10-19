@@ -1,3 +1,10 @@
+/**
+ * 本文件：编辑模式左侧导航栏的单个页面缩略图卡片。
+ * 职责：展示页码徽标、标题与实时缩略图，支持点击切换页面、拖拽排序、
+ * 双击标题行内改名，以及悬停三点菜单的重命名/复制/删除。
+ * 关键点：改名草稿仅在编辑中使用，空闲时直接派生自 scene.title，
+ * 外部改名无需同步 effect；内容不完整的页面显示琥珀色圆点提示。
+ */
 'use client';
 
 import { memo, useCallback, useRef, useState } from 'react';
@@ -124,7 +131,7 @@ function ThumbItemComponent({
           'group/thumb relative flex cursor-pointer select-none flex-col gap-1 rounded-lg p-1.5',
           'outline-none transition-colors duration-150',
           active
-            ? 'bg-violet-50 ring-1 ring-violet-200 dark:bg-violet-900/20 dark:ring-violet-700'
+            ? 'bg-blue-50 ring-1 ring-blue-200 dark:bg-blue-900/20 dark:ring-blue-700'
             : 'hover:bg-zinc-50/80 dark:hover:bg-zinc-800/50',
         )}
       >
@@ -146,7 +153,7 @@ function ThumbItemComponent({
               className={cn(
                 'flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] font-black leading-none tabular-nums',
                 active
-                  ? 'bg-violet-600 text-white shadow-sm shadow-violet-500/30 dark:bg-violet-500'
+                  ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/30 dark:bg-blue-500'
                   : 'bg-zinc-100 text-zinc-500 dark:bg-zinc-700 dark:text-zinc-400',
               )}
             >
@@ -174,8 +181,8 @@ function ThumbItemComponent({
                 aria-label={t('edit.nav.rename')}
                 className={cn(
                   'min-w-0 flex-1 truncate rounded-sm bg-white px-1 py-0 text-xs font-bold outline-none',
-                  'ring-1 ring-violet-400 focus:ring-violet-500',
-                  'text-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:ring-violet-500',
+                  'ring-1 ring-blue-400 focus:ring-blue-500',
+                  'text-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:ring-blue-500',
                 )}
               />
             ) : (
@@ -188,7 +195,7 @@ function ThumbItemComponent({
                 className={cn(
                   'truncate text-xs font-bold transition-colors',
                   active
-                    ? 'text-violet-700 dark:text-violet-300'
+                    ? 'text-blue-700 dark:text-blue-300'
                     : 'text-zinc-600 group-hover/thumb:text-zinc-900 dark:text-zinc-300 dark:group-hover/thumb:text-zinc-100',
                 )}
                 title={scene.title}
@@ -274,5 +281,8 @@ function ThumbItemComponent({
  * `ThumbnailSlide`, non-slide scenes render the same stylised mockups
  * playback's `SceneSidebar` uses. EditShell renders non-slide scenes
  * read-only inside Pro mode (no auto-exit on click).
+ *
+ * 中文要点：memo 包裹避免列表频繁重渲染；拖拽排序用 Reorder.Item 的
+ * layout="position" 只动画 y 轴位移。
  */
 export const ThumbItem = memo(ThumbItemComponent);

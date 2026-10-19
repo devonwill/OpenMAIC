@@ -12,7 +12,6 @@
  */
 
 import type { PBLMilestone, PBLProjectV2 } from '@/lib/pbl/v2/types';
-import Image from 'next/image';
 import { Maximize2, Workflow } from 'lucide-react';
 import {
   useCallback,
@@ -81,7 +80,7 @@ const PBL_WORKSPACE_THEME = {
   '--card-foreground': 'oklch(0.97 0.014 260)',
   '--popover': 'oklch(0.265 0.055 263)',
   '--popover-foreground': 'oklch(0.97 0.014 260)',
-  '--primary': '#9d8cff',
+  '--primary': '#5b9be0',
   '--primary-foreground': 'oklch(0.99 0.005 260)',
   '--secondary': 'oklch(0.32 0.052 260)',
   '--secondary-foreground': 'oklch(0.95 0.016 260)',
@@ -341,7 +340,7 @@ export function PBLV2Workspace({
       className={cn(
         'grid h-full w-full overflow-hidden bg-background text-foreground ring-1 ring-indigo-100/[0.16]',
         'shadow-[inset_0_1px_0_rgba(255,255,255,0.10),0_24px_72px_rgba(42,50,95,0.20)]',
-        'bg-[radial-gradient(circle_at_18%_5%,rgba(119,102,255,0.20),transparent_31%),radial-gradient(circle_at_86%_10%,rgba(20,184,166,0.17),transparent_29%),radial-gradient(circle_at_52%_105%,rgba(96,165,250,0.10),transparent_34%),linear-gradient(180deg,#182542_0%,#111c34_48%,#162743_100%)]',
+        'bg-[radial-gradient(circle_at_18%_5%,rgba(59,130,246,0.20),transparent_31%),radial-gradient(circle_at_86%_10%,rgba(20,184,166,0.17),transparent_29%),radial-gradient(circle_at_52%_105%,rgba(96,165,250,0.10),transparent_34%),linear-gradient(180deg,#182542_0%,#111c34_48%,#162743_100%)]',
       )}
       data-pbl-workspace="true"
       style={{
@@ -438,16 +437,11 @@ function WorkspaceTopBar({
         gridTemplateColumns: `${panelWidths.sidebar}fr 6px ${panelWidths.chat}fr 6px ${panelWidths.submission}fr`,
       }}
     >
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(157,140,255,0.20),transparent_30%),radial-gradient(circle_at_78%_0%,rgba(34,211,238,0.13),transparent_26%),linear-gradient(90deg,rgba(255,255,255,0.05),transparent_34%,rgba(255,255,255,0.035))]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(91,155,224,0.20),transparent_30%),radial-gradient(circle_at_78%_0%,rgba(34,211,238,0.13),transparent_26%),linear-gradient(90deg,rgba(255,255,255,0.05),transparent_34%,rgba(255,255,255,0.035))]" />
       <div className="relative flex min-w-0 flex-1 items-center gap-3">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-violet-200/25 bg-violet-100/[0.08] shadow-[0_0_24px_rgba(157,140,255,0.18)]">
-          <Image
-            src="/openmaic-mark.png"
-            alt="OpenMAIC"
-            width={28}
-            height={28}
-            className="h-6 w-6"
-          />
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-blue-200/25 bg-blue-100/[0.08] shadow-[0_0_24px_rgba(91,155,224,0.18)]">
+          {/* SVG 走原生 img：next.config 未开 dangerouslyAllowSVG，next/image 会拒绝 SVG。 */}
+          <img src="/openrobotics-mark.svg" alt="OpenRobotics" className="h-6 w-6" />
         </div>
         <div className="min-w-0">
           <div className="flex items-center gap-2">
@@ -467,7 +461,7 @@ function WorkspaceTopBar({
               type="button"
               onClick={onReturnToHero}
               title={t('pbl.v2.workspace.returnToHero')}
-              className="rounded bg-gradient-to-r from-violet-200 via-cyan-200 to-sky-200 bg-clip-text text-transparent transition-opacity hover:opacity-80 focus-visible:underline focus-visible:outline-none"
+              className="rounded bg-gradient-to-r from-blue-200 via-cyan-200 to-sky-200 bg-clip-text text-transparent transition-opacity hover:opacity-80 focus-visible:underline focus-visible:outline-none"
             >
               {t('pbl.v2.workspace.breadcrumbOverview')}
             </button>
@@ -481,7 +475,7 @@ function WorkspaceTopBar({
 
       <div className="relative col-start-3 hidden min-w-0 items-center gap-2 lg:flex">
         <div className="flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-indigo-100/[0.14] bg-white/[0.045] px-2.5 text-[11px] font-medium text-indigo-100/82">
-          <Workflow className="h-3.5 w-3.5 text-violet-200/90" />
+          <Workflow className="h-3.5 w-3.5 text-blue-200/90" />
           {t('pbl.v2.workspace.progressLabel')}
         </div>
         <div className="flex min-w-0 flex-1 items-center gap-1.5">
@@ -498,13 +492,13 @@ function WorkspaceTopBar({
                   className={cn(
                     'h-1.5 min-w-4 flex-1 rounded-full transition-colors',
                     completed && 'bg-cyan-300/70 shadow-[0_0_12px_rgba(103,232,249,0.30)]',
-                    active && 'bg-violet-300 shadow-[0_0_16px_rgba(167,139,250,0.42)]',
+                    active && 'bg-blue-300 shadow-[0_0_16px_rgba(147,197,253,0.42)]',
                     !active && !completed && 'bg-slate-500/35',
                   )}
                 />
                 {active && (
                   <div
-                    className="absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/50 bg-violet-300 shadow-[0_0_18px_rgba(167,139,250,0.58)] transition-[left] duration-500 ease-out"
+                    className="absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/50 bg-blue-300 shadow-[0_0_18px_rgba(147,197,253,0.58)] transition-[left] duration-500 ease-out"
                     style={{ left: `${milestoneProgressFraction(milestone) * 100}%` }}
                   />
                 )}
@@ -591,7 +585,7 @@ function WorkspaceResizeHandle({
       />
       <div
         className={cn(
-          'absolute left-1/2 top-1/2 h-10 w-px -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/60 opacity-0 shadow-[0_0_14px_rgba(157,140,255,0.28)] transition-all',
+          'absolute left-1/2 top-1/2 h-10 w-px -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/60 opacity-0 shadow-[0_0_14px_rgba(91,155,224,0.28)] transition-all',
           'group-hover:h-14 group-hover:opacity-100',
           active && 'h-16 opacity-100',
         )}
@@ -608,7 +602,7 @@ function Panel({ slot, children }: { readonly slot: PanelSlot; readonly children
         slot === 'sidebar' &&
           'bg-[linear-gradient(180deg,rgba(28,39,71,0.96)_0%,rgba(22,34,62,0.94)_100%)] shadow-[inset_-18px_0_38px_rgba(5,12,28,0.10)]',
         slot === 'chat' &&
-          'bg-[radial-gradient(circle_at_50%_0%,rgba(99,102,241,0.10),transparent_34%),linear-gradient(180deg,rgba(15,27,51,0.78)_0%,rgba(11,23,43,0.82)_100%)]',
+          'bg-[radial-gradient(circle_at_50%_0%,rgba(59,130,246,0.10),transparent_34%),linear-gradient(180deg,rgba(15,27,51,0.78)_0%,rgba(11,23,43,0.82)_100%)]',
         slot === 'submission' &&
           'bg-[linear-gradient(180deg,rgba(18,43,65,0.94)_0%,rgba(18,32,58,0.94)_100%)] shadow-[inset_18px_0_38px_rgba(5,12,28,0.10)]',
       )}

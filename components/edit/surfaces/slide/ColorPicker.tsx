@@ -6,6 +6,9 @@ import { Pipette } from 'lucide-react';
 
 // Common slide-text colors — single tight row at the foot of the picker so they
 // stay one-click reachable without dominating the popover.
+// These are choices offered to the user's CONTENT, so the row keeps a
+// recognisable violet rather than a second blue that would read as a duplicate
+// of the entry above it.
 const COMMON: readonly string[] = [
   '#000000',
   '#525252',

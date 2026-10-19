@@ -1,3 +1,10 @@
+/**
+ * 本文件：幻灯片 LaTeX 公式元素的渲染组件（编辑态）。
+ * 职责：按元素数据定位与旋转，优先渲染 KaTeX HTML，
+ *       无 HTML 时回退到历史 SVG path 方案，支持点选。
+ * 关键点：KaTeX 内容为自然尺寸，需按元素宽高做等比 scale 适配，
+ *       见 KatexContent 中的 min(width/naturalW, height/naturalH)。
+ */
 'use client';
 
 import { useRef, useState, useLayoutEffect } from 'react';
@@ -13,6 +20,7 @@ export interface LatexElementProps {
 /**
  * Latex element component (editable mode).
  * Renders KaTeX HTML if available, falls back to legacy SVG path.
+ * 中文：编辑态公式组件；锁定元素不触发点选。
  */
 export function LatexElement({ elementInfo, selectElement }: LatexElementProps) {
   const handleSelectElement = (e: React.MouseEvent | React.TouchEvent) => {
@@ -84,6 +92,7 @@ function KatexContent({ html, width, height }: { html: string; width: number; he
     if (!innerRef.current) return;
     const naturalW = innerRef.current.scrollWidth;
     const naturalH = innerRef.current.scrollHeight;
+    // 取宽、高两个方向缩放比的较小值做等比缩放，保证公式不变形；除零时保持 1
     if (naturalW > 0 && naturalH > 0) {
       setScale(Math.min(width / naturalW, height / naturalH));
     }

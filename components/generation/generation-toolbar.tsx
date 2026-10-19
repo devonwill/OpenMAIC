@@ -47,6 +47,8 @@ import {
 } from '@/lib/document/bundle';
 import { dedupeCourseMaterialFiles } from '@/lib/document/course-materials';
 import type { SelectedCourseMaterial } from '@/lib/types/generation';
+import type { KnowledgeQuota, KnowledgeSelection } from '@/lib/knowledge/quota';
+import { readKnowledgeSelection } from '@/lib/knowledge/selection';
 import { findModelById, modelIdsMatch } from '@/lib/ai/model-aliases';
 
 // ─── Constants ───────────────────────────────────────────────
@@ -57,6 +59,9 @@ const MAX_COURSE_MATERIAL_SIZE_BYTES = MAX_COURSE_MATERIAL_SIZE_MB * 1024 * 1024
 export interface GenerationToolbarProps {
   webSearch: boolean;
   onWebSearchChange: (v: boolean) => void;
+  /** 图2 知识库 multi-select + three-route citation quota. */
+  knowledge: KnowledgeSelection;
+  onKnowledgeChange: (v: KnowledgeSelection) => void;
   onSettingsOpen: (section?: SettingsSection) => void;
   // PDF
   courseMaterials: SelectedCourseMaterial[];
@@ -77,6 +82,8 @@ export interface GenerationToolbarProps {
 export function GenerationToolbar({
   webSearch,
   onWebSearchChange,
+  knowledge,
+  onKnowledgeChange,
   onSettingsOpen,
   courseMaterials,
   onCourseMaterialsAdd,
@@ -99,6 +106,79 @@ export function GenerationToolbar({
   const setWebSearchProvider = useSettingsStore((s) => s.setWebSearchProvider);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+
+  // ── 知识库 picker (reviewed bundles from /api/knowledge) ──
+  const [knowledgeOpen, setKnowledgeOpen] = useState(false);
+  const [knowledgeBundles, setKnowledgeBundles] = useState<
+    Array<{ id: string; title: string; kind: string }>
+  >([]);
+  const [knowledgeLoading, setKnowledgeLoading] = useState(false);
+  const [knowledgeLoadFailed, setKnowledgeLoadFailed] = useState(false);
+
+  const loadKnowledgeBundles = async () => {
+    setKnowledgeLoading(true);
+    setKnowledgeLoadFailed(false);
+    try {
+      const res = await fetch('/api/knowledge', { headers: { Accept: 'application/json' } });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = (await res.json()) as {
+        catalog?: Array<{ id: string; title: string; kind: string; reviewStatus?: string }>;
+      };
+      // Only reviewed bundles reach classroom retrieval — showing the rest
+      // would let users select agents that silently contribute nothing.
+      const nextBundles = (data.catalog ?? [])
+        .filter((item) => item.reviewStatus === 'reviewed')
+        .map(({ id, title, kind }) => ({ id, title, kind }));
+      setKnowledgeBundles(nextBundles);
+      // 悬空勾选（库被删除、重新抽取后退回未审核、或重新导入换了 id）留在
+      // localStorage 里：没有任何复选框勾中，角标却多计 1；服务端还会按
+      // 「选定了不存在的库」过滤，本地证据直接落空。以目录为准清掉，使
+      // 角标、复选框与检索三者一致。
+      const validIds = new Set(nextBundles.map((bundle) => bundle.id));
+      // 读权威存储而非 props 闭包：目录请求是异步的，期间用户可能刚勾选过。
+      const current = readKnowledgeSelection();
+      const keptIds = current.bundleIds.filter((id) => validIds.has(id));
+      if (keptIds.length !== current.bundleIds.length) {
+        onKnowledgeChange({ ...current, bundleIds: keptIds });
+      }
+    } catch {
+      setKnowledgeLoadFailed(true);
+    } finally {
+      setKnowledgeLoading(false);
+    }
+  };
+
+  const toggleKnowledgeBundle = (id: string) => {
+    const next = new Set(knowledge.bundleIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    onKnowledgeChange({ ...knowledge, bundleIds: [...next] });
+  };
+
+  const clampQuotaPart = (value: number) => Math.max(0, Math.min(100, Math.round(value)));
+  const knowledgeQuotaLocal = clampQuotaPart(knowledge.quota?.local ?? 70);
+  const knowledgeQuotaWeb = clampQuotaPart(knowledge.quota?.web ?? 20);
+  // Effective shares = what the server will actually apply. Web search off
+  // forces the web route to 0 and hands its share to the model route, so the
+  // sliders and the summary must show the same numbers the request will send.
+  const knowledgeQuotaEffectiveWeb = webSearch ? knowledgeQuotaWeb : 0;
+  const knowledgeQuotaModel = Math.max(
+    0,
+    100 - knowledgeQuotaLocal - knowledgeQuotaEffectiveWeb,
+  );
+  const setKnowledgeQuotaPart = (patch: Partial<KnowledgeQuota>) => {
+    const local = clampQuotaPart(patch.local ?? knowledgeQuotaLocal);
+    const web = clampQuotaPart(patch.web ?? knowledgeQuotaWeb);
+    // local + web can never exceed 100 — the model route is the residual.
+    const localFinal = patch.local !== undefined ? Math.min(local, 100 - web) : local;
+    const webFinal = patch.web !== undefined ? Math.min(web, 100 - localFinal) : web;
+    onKnowledgeChange({
+      ...knowledge,
+      quota: { local: localFinal, web: webFinal, model: Math.max(0, 100 - localFinal - webFinal) },
+    });
+  };
+
+  const knowledgeActive = knowledge.bundleIds.length > 0 || knowledge.quota !== undefined;
 
   // Check web search availability. Keyless providers such as Brave should keep
   // the toolbar reachable even when the current API-key provider is not ready.
@@ -225,7 +305,7 @@ export function GenerationToolbar({
   const pillCls =
     'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-all cursor-pointer select-none whitespace-nowrap border';
   const pillMuted = `${pillCls} border-border/50 text-muted-foreground/70 hover:text-foreground hover:bg-muted/60`;
-  const pillActive = `${pillCls} border-violet-200/60 dark:border-violet-700/50 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300`;
+  const pillActive = `${pillCls} border-blue-200/60 dark:border-blue-700/50 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300`;
 
   return (
     <div className="flex items-center gap-1 flex-wrap">
@@ -350,8 +430,8 @@ export function GenerationToolbar({
                   className={cn(
                     'flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-4 transition-colors',
                     isDragging
-                      ? 'border-violet-400 bg-violet-50 dark:bg-violet-950/20'
-                      : 'border-muted-foreground/20 hover:border-violet-300',
+                      ? 'border-blue-400 bg-blue-50 dark:bg-blue-950/20'
+                      : 'border-muted-foreground/20 hover:border-blue-300',
                     materialsLocked ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
                   )}
                   onClick={() => {
@@ -393,8 +473,8 @@ export function GenerationToolbar({
                             key={file.id}
                             className="flex items-center gap-2 rounded-lg border border-border/50 px-2 py-2"
                           >
-                            <div className="size-8 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center shrink-0">
-                              <FileText className="size-4 text-violet-600 dark:text-violet-400" />
+                            <div className="size-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
+                              <FileText className="size-4 text-blue-600 dark:text-blue-400" />
                             </div>
                             <div className="min-w-0 flex-1">
                               <p className="text-sm font-medium truncate">
@@ -427,6 +507,117 @@ export function GenerationToolbar({
           </PopoverContent>
         </Popover>
 
+        {/* ── 知识库 (local knowledge libraries + three-route quota) ── */}
+        <Popover
+          open={knowledgeOpen}
+          onOpenChange={(open) => {
+            setKnowledgeOpen(open);
+            // Refresh on every open so bundles just reviewed on the 知识页 show up.
+            if (open) void loadKnowledgeBundles();
+          }}
+        >
+          <PopoverTrigger asChild>
+            <button className={knowledgeActive ? pillActive : pillMuted}>
+              <Brain className="size-3.5" />
+              {knowledge.bundleIds.length > 0 && (
+                <span>{knowledge.bundleIds.length}</span>
+              )}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-72 p-3 space-y-3">
+            <div className="text-xs font-medium">知识库</div>
+
+            {/* Bundle multi-select */}
+            <div className="max-h-40 overflow-y-auto space-y-1 -mx-1 px-1">
+              {knowledgeLoading ? (
+                <p className="text-xs text-muted-foreground py-2">加载中…</p>
+              ) : knowledgeLoadFailed ? (
+                <p className="text-xs text-destructive py-2">
+                  加载失败，请先在知识页启用数据。
+                </p>
+              ) : knowledgeBundles.length === 0 ? (
+                <p className="text-xs text-muted-foreground py-2">
+                  暂无已审核的知识库，可在知识页上传并审核。
+                </p>
+              ) : (
+                knowledgeBundles.map((bundle) => {
+                  const checked = knowledge.bundleIds.includes(bundle.id);
+                  return (
+                    <label
+                      key={bundle.id}
+                      className={cn(
+                        'flex items-center gap-2 rounded-md border px-2 py-1.5 text-xs cursor-pointer transition-colors',
+                        checked
+                          ? 'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/20'
+                          : 'border-border hover:bg-muted/60',
+                        materialsLocked && 'opacity-60 cursor-not-allowed',
+                      )}
+                    >
+                      <input
+                        type="checkbox"
+                        className="size-3.5 accent-blue-600 shrink-0"
+                        checked={checked}
+                        disabled={materialsLocked}
+                        onChange={() => toggleKnowledgeBundle(bundle.id)}
+                      />
+                      <span className="flex-1 min-w-0 truncate" title={bundle.title}>
+                        {bundle.title}
+                      </span>
+                      <span className="text-[9px] px-1 py-0.5 rounded border text-muted-foreground shrink-0">
+                        {bundle.kind === 'code' ? '代码' : bundle.kind === 'graph' ? '图谱' : '论文'}
+                      </span>
+                    </label>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Three-route citation quota (evidence shares, not content ratios) */}
+            <div className="space-y-2 border-t pt-2">
+              <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                <span>引用配额（证据占比）</span>
+                <span>
+                  本地 {knowledgeQuotaLocal}% · 联网 {knowledgeQuotaEffectiveWeb}% · 模型{' '}
+                  {knowledgeQuotaModel}%
+                </span>
+              </div>
+              <label className="flex items-center gap-2 text-xs">
+                <span className="w-8 shrink-0 text-muted-foreground">本地</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={5}
+                  value={knowledgeQuotaLocal}
+                  disabled={materialsLocked}
+                  onChange={(e) => setKnowledgeQuotaPart({ local: Number(e.target.value) })}
+                  className="flex-1 accent-blue-600"
+                />
+                <span className="w-8 text-right tabular-nums">{knowledgeQuotaLocal}%</span>
+              </label>
+              <label className="flex items-center gap-2 text-xs">
+                <span className="w-8 shrink-0 text-muted-foreground">联网</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={5}
+                  value={knowledgeQuotaEffectiveWeb}
+                  disabled={materialsLocked || !webSearch}
+                  onChange={(e) => setKnowledgeQuotaPart({ web: Number(e.target.value) })}
+                  className="flex-1 accent-blue-600"
+                />
+                <span className="w-8 text-right tabular-nums">{knowledgeQuotaEffectiveWeb}%</span>
+              </label>
+              {!webSearch && (
+                <p className="text-[10px] text-muted-foreground/70">
+                  未开启联网时联网配额自动为 0，生成完全依赖本地知识与模型。
+                </p>
+              )}
+            </div>
+          </PopoverContent>
+        </Popover>
+
         {/* ── Web Search ── */}
         {webSearchAvailable ? (
           <Popover>
@@ -453,7 +644,7 @@ export function GenerationToolbar({
                 className={cn(
                   'w-full flex items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left transition-all',
                   webSearch
-                    ? 'bg-violet-50 dark:bg-violet-950/20 border-violet-200 dark:border-violet-800'
+                    ? 'bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800'
                     : 'border-border hover:bg-muted/50',
                   !selectedWebSearchAvailable && 'opacity-60',
                   materialsLocked && 'opacity-60 cursor-not-allowed',
@@ -462,7 +653,7 @@ export function GenerationToolbar({
                 <Globe2
                   className={cn(
                     'size-4 shrink-0',
-                    webSearch ? 'text-violet-600 dark:text-violet-400' : 'text-muted-foreground',
+                    webSearch ? 'text-blue-600 dark:text-blue-400' : 'text-muted-foreground',
                   )}
                 />
                 <div className="flex-1 min-w-0">
@@ -607,7 +798,7 @@ function InlineThinkingControl({
   };
 
   const selectTriggerCls =
-    'h-6 min-w-[84px] rounded-full border-0 bg-violet-100 px-2 py-0 !text-[10px] font-medium leading-none text-violet-700 shadow-none focus-visible:ring-0 data-[size=sm]:h-6 dark:bg-violet-900/40 dark:text-violet-200 [&_svg]:size-3';
+    'h-6 min-w-[84px] rounded-full border-0 bg-blue-100 px-2 py-0 !text-[10px] font-medium leading-none text-blue-700 shadow-none focus-visible:ring-0 data-[size=sm]:h-6 dark:bg-blue-900/40 dark:text-blue-200 [&_svg]:size-3';
   const selectItemCls = 'py-1 text-xs';
   const hasAutoBudget =
     (thinking.control === 'toggle-budget' || thinking.control === 'budget-only') &&
@@ -633,8 +824,8 @@ function InlineThinkingControl({
       onPointerDown={(event) => event.stopPropagation()}
       onKeyDown={(event) => event.stopPropagation()}
     >
-      <Brain className="size-3.5 shrink-0 text-violet-500" />
-      <div className="flex min-w-0 items-center gap-0.5 rounded-full border border-violet-200/70 bg-white/65 p-0.5 dark:border-violet-800/70 dark:bg-violet-950/25">
+      <Brain className="size-3.5 shrink-0 text-blue-500" />
+      <div className="flex min-w-0 items-center gap-0.5 rounded-full border border-blue-200/70 bg-white/65 p-0.5 dark:border-blue-800/70 dark:bg-blue-950/25">
         {hasAutoBudget && (
           <Select
             value={autoBudgetMode}
@@ -642,7 +833,7 @@ function InlineThinkingControl({
           >
             <SelectTrigger
               size="sm"
-              className="h-6 min-w-[76px] rounded-full border-0 bg-violet-100 px-2 py-0 !text-[10px] font-medium leading-none text-violet-700 shadow-none focus-visible:ring-0 data-[size=sm]:h-6 dark:bg-violet-900/40 dark:text-violet-200 [&_svg]:size-3"
+              className="h-6 min-w-[76px] rounded-full border-0 bg-blue-100 px-2 py-0 !text-[10px] font-medium leading-none text-blue-700 shadow-none focus-visible:ring-0 data-[size=sm]:h-6 dark:bg-blue-900/40 dark:text-blue-200 [&_svg]:size-3"
             >
               <SelectValue />
             </SelectTrigger>
@@ -671,7 +862,7 @@ function InlineThinkingControl({
           >
             <SelectTrigger
               size="sm"
-              className="h-6 min-w-[76px] rounded-full border-0 bg-violet-100 px-2 py-0 !text-[10px] font-medium leading-none text-violet-700 shadow-none focus-visible:ring-0 data-[size=sm]:h-6 dark:bg-violet-900/40 dark:text-violet-200 [&_svg]:size-3"
+              className="h-6 min-w-[76px] rounded-full border-0 bg-blue-100 px-2 py-0 !text-[10px] font-medium leading-none text-blue-700 shadow-none focus-visible:ring-0 data-[size=sm]:h-6 dark:bg-blue-900/40 dark:text-blue-200 [&_svg]:size-3"
             >
               <SelectValue />
             </SelectTrigger>
@@ -738,8 +929,8 @@ function InlineThinkingControl({
         {(thinking.control === 'toggle-budget' || thinking.control === 'budget-only') &&
           thinking.budgetRange &&
           (!hasAutoBudget || autoBudgetMode === 'enabled') && (
-            <label className="ml-0.5 grid h-6 shrink-0 grid-cols-[auto_60px] items-stretch overflow-hidden rounded-full border border-violet-200/70 bg-background dark:border-violet-800/70">
-              <span className="grid h-[22px] shrink-0 place-items-center border-r border-violet-200/70 bg-muted/30 px-2 font-sans text-[11px] font-medium leading-[22px] text-muted-foreground dark:border-violet-800/70">
+            <label className="ml-0.5 grid h-6 shrink-0 grid-cols-[auto_60px] items-stretch overflow-hidden rounded-full border border-blue-200/70 bg-background dark:border-blue-800/70">
+              <span className="grid h-[22px] shrink-0 place-items-center border-r border-blue-200/70 bg-muted/30 px-2 font-sans text-[11px] font-medium leading-[22px] text-muted-foreground dark:border-blue-800/70">
                 {t('toolbar.thinkingBudget')}
               </span>
               <input
@@ -869,9 +1060,9 @@ function ModelSettingsPopover({
               aria-label={`${currentProviderName} / ${currentModelLabel}`}
               className={cn(
                 'inline-flex h-8 min-w-0 items-center gap-1.5 rounded-full border px-2 text-xs font-medium transition-all',
-                'border-violet-200/70 bg-violet-50 text-violet-700 hover:bg-violet-100 dark:border-violet-800/70 dark:bg-violet-950/30 dark:text-violet-300',
+                'border-blue-200/70 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:border-blue-800/70 dark:bg-blue-950/30 dark:text-blue-300',
                 currentModelId &&
-                  'shadow-[0_0_0_1px_rgba(124,58,237,0.12)] dark:shadow-[0_0_0_1px_rgba(167,139,250,0.16)]',
+                  'shadow-[0_0_0_1px_rgba(29,78,216,0.12)] dark:shadow-[0_0_0_1px_rgba(147,197,253,0.16)]',
               )}
             >
               {currentProviderIcon ? (
@@ -884,7 +1075,7 @@ function ModelSettingsPopover({
                 <Bot className="size-3.5 shrink-0" />
               )}
               {currentThinkingLabel && (
-                <span className="shrink-0 rounded-full bg-white/80 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-violet-700 ring-1 ring-violet-200/70 dark:bg-violet-950/50 dark:text-violet-200 dark:ring-violet-800/70">
+                <span className="shrink-0 rounded-full bg-white/80 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-blue-700 ring-1 ring-blue-200/70 dark:bg-blue-950/50 dark:text-blue-200 dark:ring-blue-800/70">
                   {currentThinkingLabel}
                 </span>
               )}
@@ -944,7 +1135,7 @@ function ModelSettingsPopover({
                           {provider.models.length}
                         </div>
                       </div>
-                      {isCurrent && <span className="size-1.5 rounded-full bg-violet-500" />}
+                      {isCurrent && <span className="size-1.5 rounded-full bg-blue-500" />}
                     </button>
                   );
                 })
@@ -999,7 +1190,7 @@ function ModelSettingsPopover({
                       className={cn(
                         'mb-1 flex min-h-11 w-full items-center gap-2 rounded-md px-2.5 py-2 text-left transition-colors',
                         isSelected
-                          ? 'bg-violet-50 text-violet-700 ring-1 ring-violet-200 dark:bg-violet-950/25 dark:text-violet-300 dark:ring-violet-800'
+                          ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200 dark:bg-blue-950/25 dark:text-blue-300 dark:ring-blue-800'
                           : 'hover:bg-muted/60',
                       )}
                     >
@@ -1020,7 +1211,7 @@ function ModelSettingsPopover({
                         />
                       )}
                       {isSelected && (
-                        <Check className="size-3.5 shrink-0 text-violet-600 dark:text-violet-400" />
+                        <Check className="size-3.5 shrink-0 text-blue-600 dark:text-blue-400" />
                       )}
                     </div>
                   );

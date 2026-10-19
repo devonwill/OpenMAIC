@@ -1,3 +1,10 @@
+/**
+ * 本文件：Pro 编辑模式顶部命令栏。
+ * 职责：左侧教室退出与撤销/重做 + 标题，中部为当前 surface 注册的命令，
+ * 右侧留 trailing 插槽给 Stage 放置设置/切换/下载控件。
+ * 关键点：history/commands 全部可选，surface 未注册时命令栏仍可干净渲染；
+ * 退出 Pro 模式由全局 Pro Switch 负责，此处刻意不放「完成」按钮。
+ */
 'use client';
 
 import { ArrowLeft, Redo2, Undo2 } from 'lucide-react';
@@ -33,6 +40,7 @@ interface CommandBarProps {
  * not a one-way state, so we deliberately do *not* place a "Done" pill
  * here that would compete with the Switch's affordance.
  */
+/** Pro 模式顶栏：退出 + 撤销/重做 + 标题（左），surface 命令与 trailing（右）。 */
 export function CommandBar({ title, history, commands, trailing }: CommandBarProps) {
   const { t } = useI18n();
   const router = useRouter();

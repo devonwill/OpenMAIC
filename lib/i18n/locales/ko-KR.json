@@ -45,7 +45,10 @@
   },
   "home": {
     "slogan": "멀티 에이전트 인터랙티브 교실에서 펼치는 생성형 학습",
-    "greetingWithName": "안녕하세요, {{name}}!"
+    "greetingWithName": "안녕하세요, {{name}}!",
+    "setupLLMFirst": "Please configure a large-model provider in System Settings before using {{feature}}.",
+    "workbenchEntry": "Workbench",
+    "enterClassroom": "classroom generation"
   },
   "toolbar": {
     "pdfParser": "파서",
@@ -490,6 +493,8 @@
       "title": "내레이션 스크립트",
       "regenAllTts": "전체 음성 다시 생성",
       "voiceAll": "전체 음성",
+      "cloneVoiceSelect": "클론 음색을 선택하면 ‘전체 음성’으로 해당 음색 다시합성",
+      "cloneVoiceDefault": "기본 음색",
       "counts": "내레이션 {{speech}}개 · 동작 {{cue}}개",
       "panLeft": "왼쪽으로 이동",
       "panRight": "오른쪽으로 이동",
@@ -1167,6 +1172,12 @@
     "webSearching": "웹 검색",
     "webSearchingDesc": "최신 정보를 웹에서 검색하고 있어요",
     "webSearchFailed": "웹 검색에 실패했습니다",
+    "citationsTitle": "이 페이지의 인용",
+    "citationsValid": "{{count}}개 확인됨",
+    "citationsInvalid": "{{count}}개 무효",
+    "citationReasonNotFound": "지식 베이스에 없음(모델이 지어냈을 가능성)",
+    "citationReasonNotReviewed": "소스 라이브러리 미검토",
+    "citationReasonOutOfScope": "선택한 지식 라이브러리 범위 밖",
     "outlinesReadyCount": "{{ready}} / {{total}}개 섹션 준비됨",
     "jumpToBlankTitle": "제목이 필요한 섹션으로 이동",
     "analyzingMediaMaterial": "오디오/비디오 분석 중"
@@ -1905,7 +1916,7 @@
       "download": "다운로드",
       "detailFailed": "스킬 상세를 불러오지 못했습니다",
       "contentLabel": "내용",
-      "builtinDetailNote": "이 스킬은 OpenMAIC에 포함되어 있습니다. 다른 에이전트 작업공간으로 가져오려면 다운로드하세요.",
+      "builtinDetailNote": "이 스킬은 OpenRobotics에 포함되어 있습니다. 다른 에이전트 작업공간으로 가져오려면 다운로드하세요.",
       "upload": "업로드",
       "uploading": "업로드 중…",
       "uploadFailed": "스킬을 업로드하지 못했습니다. 파일을 확인하고 다시 시도하세요.",
@@ -2062,7 +2073,26 @@
     "badgeEnter": "Pro 모드",
     "badgeExit": "일반 모드로 돌아가기",
     "launchPlaceholder": "만들고 싶은 학습 경험을 설명해 보세요",
-    "launchSend": "구축 시작"
+    "launchSend": "구축 시작",
+    "config": "빠른 설정",
+    "configModel": "모델",
+    "configModelScope": "장면 생성·대화 세션·퀴즈에 적용됩니다. 워크벤치 응답 모델은 서버측에서 고정됩니다.",
+    "configNoModelProvider": "구성된 모델 제공자가 없습니다. 설정에서 추가하세요.",
+    "configVoice": "음성",
+    "knowledge": "지식베이스",
+    "knowledgeLoading": "로딩 중…",
+    "knowledgeLoadFailed": "로딩에 실패했습니다. 먼저 지식 페이지에서 데이터를 활성화하세요.",
+    "knowledgeEmpty": "검토된 지식 베이스가 없습니다. 지식 페이지에서 업로드하고 검토하세요.",
+    "knowledgeKindCode": "코드",
+    "knowledgeKindGraph": "그래프",
+    "knowledgeKindPaper": "논문",
+    "knowledgeQuota": "인용 할당량(증거 비중)",
+    "knowledgeQuotaSummary": "로컬 {{local}}% · 웹 {{web}}% · 모델 {{model}}%",
+    "knowledgeQuotaLocal": "로컬",
+    "knowledgeQuotaWeb": "웹",
+    "configCloneUse": "모든 AI 교사에 내 클론 음성 통일 적용",
+    "configCloneSelect": "클론 음성 선택",
+    "configCloneEmpty": "클론 음성이 등록되지 않았습니다. 음성 설정에서 먼저 등록하세요"
   },
   "workbench": {
     "tool": {

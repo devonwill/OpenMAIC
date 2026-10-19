@@ -9,6 +9,7 @@ import type { InteractiveStateEvidence } from '@/lib/interactive/chat-observatio
 import type { UIMessage } from 'ai';
 import type { CleanupSource } from '@/lib/playback/auto-resume';
 import type { ThinkingConfig } from './provider';
+import type { KnowledgeSelection } from '@/lib/knowledge/quota';
 
 // Session Types
 export type SessionType = 'qa' | 'discussion' | 'lecture';
@@ -363,6 +364,8 @@ export interface StatelessChatRequest {
   };
   /** Optional Pi-only, identity-only reference to one classroom component. */
   elementReference?: ElementReference;
+  /** 图1 勾选的知识库：服务端按此圈定课堂检索范围（未下发=全库检索）。 */
+  knowledge?: KnowledgeSelection;
   /** Request-scoped browser evidence, never a tool permission or static definition. */
   interactiveState?: InteractiveStateEvidence;
   /** Agent configuration */

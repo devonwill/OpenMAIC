@@ -1,3 +1,8 @@
+/**
+ * 本文件：只读图片元素组件（放映/缩略图/导出侧）。
+ * 职责：渲染裁剪、滤镜、翻转后的图片，并区分生成中/禁用/失败/可重试状态。
+ * 关键点：媒体占位符解析与编辑态共用 useResolvedImageSrc，保证两侧表现一致。
+ */
 'use client';
 
 import type { PPTImageElement } from '@openmaic/dsl';

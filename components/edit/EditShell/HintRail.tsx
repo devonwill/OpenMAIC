@@ -1,3 +1,10 @@
+/**
+ * 本文件：编辑器底部 AI 提示条（HintRail）。
+ * 职责：以浮层卡片渲染 surface 返回的编辑提示（info/suggestion/warning 三级），
+ * 并可把自身高度写入 CSS 变量为布局预留空间。
+ * 关键点：容器 pointer-events-none，仅提示卡上的操作按钮恢复可点；
+ * 无提示时返回 null，预留空间用 ResizeObserver 跟随内容高度。
+ */
 'use client';
 
 import { Info, Lightbulb, AlertTriangle } from 'lucide-react';
@@ -14,6 +21,7 @@ interface HintRailProps {
  * return [] for hints). Layout slot is wired so future phases can populate
  * it without restructuring the shell.
  */
+/** 底部编辑提示条：无提示不渲染；reserveSpace 时向宿主暴露自身高度。 */
 export function HintRail({ hints, reserveSpace = false }: HintRailProps) {
   const railRef = useRef<HTMLDivElement>(null);
 

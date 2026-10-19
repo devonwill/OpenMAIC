@@ -1,3 +1,10 @@
+/**
+ * 本文件：编辑坞折叠状态的 React 上下文。
+ * 职责：EditDock 持有折叠状态并通过 Provider 下发，旁白时间轴用
+ * useEditDock 读取折叠态并放置自己的折叠开关。
+ * 关键点：时间轴脱离编辑坞渲染时 useEditDock 返回中性默认值（未折叠），
+ * 使其不依赖外壳是否存在。
+ */
 'use client';
 
 /**
@@ -24,6 +31,7 @@ export interface EditDockContextValue {
 
 const EditDockContext = createContext<EditDockContextValue | null>(null);
 
+/** 向后代提供编辑坞折叠状态，通常由 EditDock 在时间轴外层调用。 */
 export function EditDockProvider({
   value,
   children,
@@ -39,6 +47,7 @@ export function EditDockProvider({
  * outside a dock (an isolated test, a future standalone mount) so it is never
  * coupled to the shell being there.
  */
+/** 读取编辑坞折叠态；无 Provider 时回退到「未折叠」的中性默认值。 */
 export function useEditDock(): EditDockContextValue {
   return useContext(EditDockContext) ?? { collapsed: false, toggleCollapsed: () => undefined };
 }

@@ -1,3 +1,10 @@
+/**
+ * 本文件：幻灯片视频元素的渲染组件（只读/演示态）。
+ * 职责：按媒体解析状态渲染骨架/禁用/失败/视频占位，
+ *       播放由 canvas store 的 play_video 动作统一控制。
+ * 关键点：视频永不自动播放，挂载时强制 pause；仅当前
+ *       playingVideoElementId 是自己时才播，切换即暂停。
+ */
 'use client';
 
 import { useRef, useEffect } from 'react';
@@ -27,6 +34,7 @@ export interface BaseVideoElementProps {
  * Base video element component for read-only/presentation display.
  * Controlled exclusively by the canvas store via the play_video action.
  * Videos never autoplay — they wait for an explicit play_video action.
+ * 中文：只读态视频组件，播放状态完全由 store 驱动。
  */
 export function BaseVideoElement({ elementInfo }: BaseVideoElementProps) {
   const { t } = useI18n();
@@ -70,6 +78,8 @@ export function BaseVideoElement({ elementInfo }: BaseVideoElementProps) {
     const wasMe = prevPlayingRef.current === elementInfo.id;
     prevPlayingRef.current = playingVideoElementId;
 
+    // 用“刚变为我/刚不为我”的边沿触发播放与暂停，
+    // 避免每次 playingVideoElementId 变化都重复 play/pause
     if (isMe && !wasMe) {
       // "Tap" press animation — a deliberate, teacher-paced click feel
       animate(
@@ -114,7 +124,7 @@ export function BaseVideoElement({ elementInfo }: BaseVideoElementProps) {
         style={{ transform: `rotate(${elementInfo.rotate}deg)` }}
       >
         {showSkeleton ? (
-          <div className="w-full h-full bg-gradient-to-br from-indigo-50 via-violet-50/60 to-blue-50 dark:from-indigo-950/40 dark:via-violet-950/30 dark:to-blue-950/20 flex items-center justify-center rounded">
+          <div className="w-full h-full bg-gradient-to-br from-indigo-50 via-blue-50/60 to-sky-50 dark:from-indigo-950/40 dark:via-blue-950/30 dark:to-sky-950/20 flex items-center justify-center rounded">
             <style>{`
               @keyframes vid-pulse-ring { 0%, 100% { opacity: 0.15; transform: scale(0.85); } 50% { opacity: 0.35; transform: scale(1.1); } }
             `}</style>

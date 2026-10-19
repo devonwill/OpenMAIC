@@ -848,7 +848,7 @@ export interface CodeLine {
  *
  * showLineNumbers?: whether to show line numbers, default true
  *
- * fontSize?: font size in pixels, default 14
+ * fontSize?: font size in pixels, default 16
  */
 export interface PPTCodeElement extends PPTBaseElement {
   type: 'code';

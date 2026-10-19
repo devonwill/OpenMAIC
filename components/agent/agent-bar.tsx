@@ -8,7 +8,12 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/hooks/use-i18n';
 import { useSettingsStore } from '@/lib/store/settings';
 import { useAgentRegistry } from '@/lib/orchestration/registry/store';
-import { resolveAgentVoice, getSelectableProvidersWithVoices } from '@/lib/audio/voice-resolver';
+import {
+  resolveAgentVoice,
+  resolveExplicitAgentVoice,
+  resolveGlobalCloneOverride,
+  getSelectableProvidersWithVoices,
+} from '@/lib/audio/voice-resolver';
 import { playBrowserTTSPreview } from '@/lib/audio/browser-tts-preview';
 import { useAllVoiceProfiles } from '@/lib/audio/voxcpm-voices';
 import { resolveAgentVoiceOptions } from '@/lib/audio/agent-voice';
@@ -80,7 +85,21 @@ function AgentVoicePill({
   const ttsProvidersConfig = useSettingsStore((s) => s.ttsProvidersConfig);
   const agentVoiceOverrides = useSettingsStore((s) => s.agentVoiceOverrides);
   const setAgentVoiceOverride = useSettingsStore((s) => s.setAgentVoiceOverride);
-  const resolved = resolveAgentVoice(agent, agentIndex, availableProviders, agentVoiceOverrides);
+  const useMyCloneVoice = useSettingsStore((s) => s.useMyCloneVoice);
+  const myCloneVoiceId = useSettingsStore((s) => s.myCloneVoiceId);
+  const myCloneVoiceProvider = useSettingsStore((s) => s.myCloneVoiceProvider);
+  // An explicit per-agent pick wins over the global clone default, which in
+  // turn wins over the deterministic fallback — the same precedence the
+  // lecture/discussion paths use, so this pill's display/preview matches what
+  // actually plays.
+  const cloneOverride = resolveGlobalCloneOverride(
+    { useMyCloneVoice, myCloneVoiceId, myCloneVoiceProvider },
+    availableProviders,
+  );
+  const resolved =
+    resolveExplicitAgentVoice(agent, availableProviders, agentVoiceOverrides) ??
+    cloneOverride ??
+    resolveAgentVoice(agent, agentIndex, availableProviders, agentVoiceOverrides);
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [voiceQuery, setVoiceQuery] = useState('');
   const [previewingId, setPreviewingId] = useState<string | null>(null);
@@ -742,7 +761,7 @@ export function AgentBar() {
               </div>
             )}
           </div>
-          <Shuffle className="size-4 text-violet-400 dark:text-violet-500" />
+          <Shuffle className="size-4 text-blue-400 dark:text-blue-500" />
         </>
       ) : (
         <>
@@ -917,9 +936,9 @@ export function AgentBar() {
               ) : (
                 <div className="flex flex-col items-center pt-6 pb-3 gap-4">
                   <div className="relative flex items-center justify-center">
-                    <div className="absolute size-10 rounded-full bg-violet-400/10 dark:bg-violet-400/15 animate-ping [animation-duration:3s]" />
-                    <div className="absolute size-12 rounded-full bg-violet-400/5 dark:bg-violet-400/10 animate-pulse [animation-duration:2.5s]" />
-                    <Shuffle className="relative size-5 text-violet-400 dark:text-violet-500" />
+                    <div className="absolute size-10 rounded-full bg-blue-400/10 dark:bg-blue-400/15 animate-ping [animation-duration:3s]" />
+                    <div className="absolute size-12 rounded-full bg-blue-400/5 dark:bg-blue-400/10 animate-pulse [animation-duration:2.5s]" />
+                    <Shuffle className="relative size-5 text-blue-400 dark:text-blue-500" />
                   </div>
                   <div className="flex-1" />
                   <div className="text-center space-y-1">

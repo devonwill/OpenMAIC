@@ -1,3 +1,12 @@
+/**
+ * 本文件：编辑态单个元素的容器包装组件。
+ * 职责：按元素类型分发到对应渲染组件（图片/文本/形状/折线/图表/
+ *       LaTeX/表格/视频），套上绝对定位外壳、稳定 DOM id 与右键菜单
+ *       （剪切复制、对齐、层级、组合、锁定等）。
+ * 关键点：未实现的类型渲染占位提示而非报错；锁定元素的右键菜单
+ *       只剩「解锁」，防止误操作。
+ */
+
 import { useMemo } from 'react';
 import { ElementTypes, type PPTElement } from '@openmaic/dsl';
 import { ImageElement } from '../../components/element/ImageElement';

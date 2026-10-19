@@ -1,3 +1,10 @@
+/**
+ * 本文件：助手消息的 Markdown 渲染。
+ * 职责：基于 Streamdown 渲染流式文本，叠加 KaTeX 公式、CJK 友好强调、
+ * workbench 皮肤与课程链接改写四项定制。
+ * 关键点：remark-cjk-friendly 必须排在 remark-gfm 之前，否则全角标点旁
+ * 的 **强调** 会露出星号；指向课程的锚点升级为内联 CourseLink。
+ */
 'use client';
 
 /**
@@ -28,6 +35,8 @@ import { courseIdFromHref } from '@/lib/workbench/course-link';
 import { remarkSelectiveSingleDollarMath } from '@/lib/workbench/markdown-math';
 import { CourseLink } from './course-link';
 
+// 插件顺序有意为之：CJK 插件在前、默认插件（gfm 等）显式展开在后——
+// Streamdown 的 remarkPlugins 会整体替换默认值。
 const REMARK_PLUGINS = [
   remarkCjkFriendly,
   remarkSelectiveSingleDollarMath,
@@ -48,6 +57,7 @@ const REMEND = { katex: false } as const;
 // copy action stays.
 const CONTROLS = { table: false } as const;
 
+// 锚点改写：识别为课程的 href 渲染为内联 CourseLink，其余保持普通 <a>。
 const COMPONENTS = {
   a: ({
     href,
@@ -78,6 +88,7 @@ const COMPONENTS = {
   },
 } as const;
 
+// 空文本不渲染；流式期间开启不完整 Markdown 解析，避免半截语法闪烁。
 export function TextBlock({ text, streaming = false }: { text: string; streaming?: boolean }) {
   if (!text) return null;
   return (

@@ -45,7 +45,10 @@
   },
   "home": {
     "slogan": "Generative Learning in Multi-Agent Interactive Classroom",
-    "greetingWithName": "Привет, {{name}}"
+    "greetingWithName": "Привет, {{name}}",
+    "setupLLMFirst": "Please configure a large-model provider in System Settings before using {{feature}}.",
+    "workbenchEntry": "Workbench",
+    "enterClassroom": "classroom generation"
   },
   "toolbar": {
     "pdfParser": "Парсер",
@@ -563,6 +566,8 @@
       "title": "Сценарий закадрового текста",
       "regenAllTts": "Сгенерировать всю озвучку заново",
       "voiceAll": "Озвучить всё",
+      "cloneVoiceSelect": "Выберите клонированный голос — «Озвучить всё» перезапишет все фразы им",
+      "cloneVoiceDefault": "Голос по умолчанию",
       "counts": "{{speech}} реплик · {{cue}} действий",
       "panLeft": "Прокрутить влево",
       "panRight": "Прокрутить вправо",
@@ -1167,6 +1172,12 @@
     "webSearching": "Поиск в интернете",
     "webSearchingDesc": "Поиск актуальной информации в сети",
     "webSearchFailed": "Ошибка веб-поиска",
+    "citationsTitle": "Источники на этой странице",
+    "citationsValid": "Проверено: {{count}}",
+    "citationsInvalid": "Недействительных: {{count}}",
+    "citationReasonNotFound": "Не найдено в базе знаний (возможно, выдумано моделью)",
+    "citationReasonNotReviewed": "Библиотека-источник не проверена",
+    "citationReasonOutOfScope": "Вне выбранных библиотек знаний",
     "outlinesReadyCount": "Готово разделов: {{ready}} / {{total}}",
     "jumpToBlankTitle": "Перейти к разделу без заголовка",
     "analyzingMediaMaterial": "Анализ аудио/видео"
@@ -1905,7 +1916,7 @@
       "download": "Скачать",
       "detailFailed": "Не удалось загрузить сведения о навыке",
       "contentLabel": "Содержимое",
-      "builtinDetailNote": "Этот навык поставляется с OpenMAIC. Скачайте его, чтобы импортировать в другое рабочее пространство агента.",
+      "builtinDetailNote": "Этот навык поставляется с OpenRobotics. Скачайте его, чтобы импортировать в другое рабочее пространство агента.",
       "upload": "Загрузить",
       "uploading": "Загрузка…",
       "uploadFailed": "Не удалось загрузить навык. Проверьте файл и повторите попытку.",
@@ -2062,7 +2073,26 @@
     "badgeEnter": "Pro-режим",
     "badgeExit": "Вернуться в обычный режим",
     "launchPlaceholder": "Опишите учебный опыт, который хотите создать",
-    "launchSend": "Начать сборку"
+    "launchSend": "Начать сборку",
+    "config": "Быстрые настройки",
+    "configModel": "Модель",
+    "configModelScope": "Применяется к генерации сцен, чат-сессиям и тестам; модель ответа рабочей области задаётся на сервере.",
+    "configNoModelProvider": "Настроенные провайдеры моделей не найдены — добавьте их в Настройках.",
+    "configVoice": "Голос",
+    "knowledge": "База знаний",
+    "knowledgeLoading": "Загрузка…",
+    "knowledgeLoadFailed": "Не удалось загрузить — сначала включите данные на странице «Знания».",
+    "knowledgeEmpty": "Проверенных баз знаний пока нет — загрузите их на странице «Знания» и проведите проверку.",
+    "knowledgeKindCode": "Код",
+    "knowledgeKindGraph": "Граф",
+    "knowledgeKindPaper": "Статья",
+    "knowledgeQuota": "Квота цитирования (доля доказательств)",
+    "knowledgeQuotaSummary": "Локальная {{local}}% · Веб {{web}}% · Модель {{model}}%",
+    "knowledgeQuotaLocal": "Локальная",
+    "knowledgeQuotaWeb": "Веб",
+    "configCloneUse": "Использовать мой клонированный голос для всех ИИ-преподавателей",
+    "configCloneSelect": "Выбрать клонированный голос",
+    "configCloneEmpty": "Клонированный голос не зарегистрирован — сначала зарегистрируйте его в настройках голоса"
   },
   "workbench": {
     "tool": {

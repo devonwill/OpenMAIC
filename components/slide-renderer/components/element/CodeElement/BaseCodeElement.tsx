@@ -1,3 +1,10 @@
+/**
+ * 本文件：幻灯片代码块元素的渲染组件（只读/回放态）。
+ * 职责：渲染带 macOS 风格外壳的代码块，经 Shiki 单例高亮，
+ *       并实现逐行打字、插入高亮、替换选中等入场动画。
+ * 关键点：拖拽滚动与滚轮需与白板平移/缩放隔离（指针捕获 + 阻止
+ *       wheel 冒泡）；高亮与动画状态均做记忆化/懒加载以省性能。
+ */
 'use client';
 
 import { useRef, useState, useEffect, useMemo, useCallback } from 'react';
@@ -6,6 +13,8 @@ import type { PPTCodeElement, CodeLine } from '@openmaic/dsl';
 
 // ==================== Shiki Singleton ====================
 
+// Shiki 高亮器按模块级 Promise 单例缓存：首次动态 import 后复用，
+// 避免每个代码块重复加载高亮引擎
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let highlighterPromise: Promise<any> | null = null;
 
@@ -117,6 +126,8 @@ function computeRevealSteps(content: string): number[] {
 }
 
 function humanTypingEase(t: number): number {
+  // 基础为余弦缓入缓出，叠加小幅正弦“手抖”，让打字节奏更像真人输入；
+  // 抖动幅度按 4t(1-t) 在中段最大、两端归零，最后钳制到 [0,1]
   const eased = 0.5 - 0.5 * Math.cos(Math.PI * t);
   const stutter = Math.sin(t * Math.PI * STUTTER_COUNT) * STUTTER_AMOUNT * 4 * t * (1 - t);
   return Math.min(Math.max(eased + stutter, 0), 1);
@@ -367,8 +378,14 @@ function CodeLineRow({
 
 // ==================== BaseCodeElement ====================
 
+/**
+ * 只读/回放态代码块组件。
+ * 支持按行打字入场动画（animate 时启用）与内部拖拽滚动；
+ * 高亮未就绪或语言不受支持时回退为转义后的纯文本。
+ */
 export function BaseCodeElement({ elementInfo, animate }: BaseCodeElementProps) {
-  const { language, lines, fileName, showLineNumbers = true, fontSize = 14 } = elementInfo;
+  // 代码默认字号 16px：与生成规范「特殊场景 16px」档位保持一致
+  const { language, lines, fileName, showLineNumbers = true, fontSize = 16 } = elementInfo;
   const wrapperRef = useRef<HTMLDivElement>(null);
   const codeBodyRef = useRef<HTMLDivElement>(null);
 
@@ -380,6 +397,8 @@ export function BaseCodeElement({ elementInfo, animate }: BaseCodeElementProps) 
   //      native `addEventListener('wheel', ...)` never fires while the cursor
   //      is over the code body. Outside the body (header / border) is handled
   //      by the wrapper-level wheel listener below.
+  // 中文：代码体内部支持按住拖拽滚动；上述两层隔离保证光标在代码区时，
+  //   拖拽与滚轮只作用于代码块本身，不触发白板的平移/缩放。
   useEffect(() => {
     const el = codeBodyRef.current;
     if (!el) return;
@@ -483,6 +502,8 @@ export function BaseCodeElement({ elementInfo, animate }: BaseCodeElementProps) 
   // mount before the states arrive (the old setTimeout(0) path), every row
   // takes the non-animated branch and the per-line stagger collapses into
   // simultaneous typing (#531).
+  // 中文：入场动画状态必须在首帧同步计算（useState 初始化器内），
+  //   否则行先挂载、状态后到，逐行错峰会退化为同时打字。
   const [animStates, setAnimStates] = useState<Map<string, LineAnimationState>>(() => {
     const states = new Map<string, LineAnimationState>();
     if (animate) {
@@ -568,6 +589,7 @@ export function BaseCodeElement({ elementInfo, animate }: BaseCodeElementProps) 
   const lineHtmlMap = highlightedLines || fallbackLines;
 
   const typingDelays = useMemo(() => {
+    // 逐行动画按“前一行打字时长 + 行间隔”累加错峰，未参与动画的行不占位
     const delays = new Map<string, number>();
     let cumulative = 0;
     for (const line of lines) {

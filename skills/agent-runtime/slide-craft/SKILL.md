@@ -46,14 +46,14 @@ A text element has **10px padding on all four sides**, so its usable area is
 
 | Font size | 1 line | 2 lines | 3 lines | 4 lines | 5 lines |
 | --------- | ------ | ------- | ------- | ------- | ------- |
-| 14px      | 43     | 64      | 85      | 106     | 127     |
 | 16px      | 46     | 70      | 94      | 118     | 142     |
-| 18px      | 49     | 76      | 103     | 130     | 157     |
 | 20px      | 52     | 82      | 112     | 142     | 172     |
-| 24px      | 58     | 94      | 130     | 166     | 202     |
-| 28px      | 64     | 106     | 148     | 190     | 232     |
+| 26px      | 61     | 100     | 139     | 178     | 217     |
 | 32px      | 70     | 118     | 166     | 214     | 262     |
-| 36px      | 76     | 130     | 184     | 238     | 292     |
+
+These four rows are the only sizes that exist on this deck (see the type
+scale below); 16px is the hard floor — it exports at 12pt, and anything
+smaller is forbidden.
 
 When you replace an element's words, re-derive its height instead of keeping
 the old one:
@@ -75,18 +75,23 @@ words.
 
 ## The type scale
 
-| Content     | Size    |
-| ----------- | ------- |
-| Main title  | 32-36px |
-| Subtitle    | 24-28px |
-| Key points  | 18-20px |
-| Body        | 16-18px |
-| Caption     | 14-16px |
+Sizes are written in canvas px; on export 1px = 0.72pt (the 1000px canvas
+exports as 720pt wide), so the deck's spec is:
 
-Levels stay 2-4px apart and everything at one level uses one size. When you
-touch an element, take its size from the siblings that share its role on that
+| Content                      | Export spec | Canvas size | Weight |
+| ---------------------------- | ----------- | ----------- | ------ |
+| Page title                   | 23pt        | 32px        | **bold** |
+| Section subtitle / key point | 19pt        | 26px        | **bold** |
+| Body                         | 14pt        | 20px        | regular |
+| Special cases (code / dense text) | 12pt   | 16px        | —      |
+
+Four sizes only — step down the ladder (32 → 26 → 20 → 16) to make content
+fit, and never write a `font-size` below 16px; 16px is reserved for code and
+unusually dense text, while 20px stays the body default. When you touch an element,
+take its size from the siblings that share its role on that
 page rather than from this table fresh — the page's own scale wins, and this
-table is how you recognise which level an element belongs to.
+table is how you recognise which level an element belongs to. Same-level
+elements use identical sizes.
 
 **Size lives in the content HTML**, as inline `font-size` on the `<p>` — there is
 no font-size field to write. So changing a size means writing the whole content
@@ -102,7 +107,7 @@ most tag semantics. Four consequences decide how you write rich text:
   the browser editor — not to classroom playback. A list sent as
   `<ul><li>…</li></ul>` comes out as bare unindented lines. Write bullets the
   way the deck itself does: **one `<p>` per item with the marker in the text**,
-  `<p style="font-size:18px;">• First point</p>`.
+  `<p style="font-size:20px;">• First point</p>`.
 - **`<h1>`–`<h6>` are inert.** The reset sets `font-size: inherit` and
   `font-weight: inherit` on them, so a heading tag is a `<p>` with extra
   characters. Size and weight come from inline `font-size` and
@@ -148,10 +153,10 @@ the source JSON first and preserve its inline spans. `opacity` on a text element
 *and* the fill together because it applies to the whole box — it is not a way
 to soften a background behind live text.
 
-Aim for **≥ 4.5:1** on body text and **≥ 3:1** on 24px-and-up titles. Two
+Aim for **≥ 4.5:1** on body text and **≥ 3:1** on 26px-and-up titles. Two
 calibration points from this deck's own palette: `#333333` on white is about
 12:1 and safe anywhere; the accent `#5b9bd5` on white is about 3:1, which
-passes for a 32px title and fails for 16px body. The pattern that always
+passes for a 32px title and fails for 20px body. The pattern that always
 works here is a **pale tint fill with dark same-hue text** — `#1e40af` on
 `#dbeafe`, `#166534` on `#dcfce7`, `#92400e` on `#fef3c7`, each around 6-7:1.
 Recolouring one half of such a pair breaks it; recolour both or neither.
@@ -195,9 +200,9 @@ without a render: sort the content elements by `top` and read the gaps.
 A crowded page shows gaps under ~20px and a bottom edge near 512; an empty one
 shows one cluster and 150px of dead space below it. Fix crowding by cutting
 words and merging elements, not by shrinking font sizes below the scale — a
-page whose body text has dropped to 12px is a page with too much content on
-it. Fix emptiness by growing the type one level and re-centring the block
-vertically, not by adding filler.
+page whose body text has dropped to the 16px special-case size is a page with too much
+content on it. Fix emptiness by growing the type one level and re-centring the
+block vertically, not by adding filler.
 
 ## One kind of content, one kind of element
 
@@ -291,5 +296,5 @@ a formula, a density judgement, or text you suspect overflows.
 - **Formulas are latex elements, and their rendered form does not follow a
   string patch.** Replace, do not patch.
 - **Parallel elements share exact numbers.** Copy them from the inventory.
-- **Cut words before you grow boxes.** A page that only fits at 12px is a page
-  with too much on it.
+- **Cut words before you grow boxes.** A page that only fits at the 16px
+  special-case size is a page with too much on it.

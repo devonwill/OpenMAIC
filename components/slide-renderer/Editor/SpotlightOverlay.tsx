@@ -1,3 +1,11 @@
+/**
+ * 本文件：聚光灯（spotlight）特效覆盖层。
+ * 职责：通过 DOM 实测目标元素位置，用 SVG mask 在整页暗层上
+ *       挖出高亮区域并加白边，动画由 spotlightV1 描述符驱动。
+ * 关键点：位置用 getBoundingClientRect 实测并归一到 0-100
+ *       viewBox，避免百分比坐标换算的对齐偏移；暗层禁用
+ *       backdrop-filter（与 SVG mask 合成冲突，见代码内注释）。
+ */
 'use client';
 
 import { useRef, useState, useLayoutEffect, useCallback } from 'react';
@@ -22,6 +30,7 @@ interface SpotlightRect {
  *
  * Uses DOM measurement (getBoundingClientRect) to compute spotlight position,
  * avoiding alignment offsets from percentage coordinate conversion.
+ * 中文：用 DOM 实测计算聚光位置，避免百分比坐标换算带来的偏移。
  */
 interface SpotlightOverlayProps {
   /**
@@ -33,6 +42,10 @@ interface SpotlightOverlayProps {
   domIdPrefix?: string;
 }
 
+/**
+ * 聚光灯覆盖层：按目标元素 DOM 位置在暗层上挖洞高亮。
+ * 中文：目标不存在或容器尺寸为 0 时清空 rect、不渲染特效。
+ */
 export function SpotlightOverlay({
   domIdPrefix = SCREEN_ELEMENT_ID_PREFIX,
 }: SpotlightOverlayProps = {}) {
@@ -71,6 +84,8 @@ export function SpotlightOverlay({
     }
 
     // Convert to SVG viewBox 0-100 coordinates
+    // 中文：把实测像素差换算成容器内的相对百分比（0-100），
+    //   与 SVG viewBox 口径一致，保证 mask 矩形与元素严格对齐
     setRect({
       x: ((targetRect.left - containerRect.left) / containerRect.width) * 100,
       y: ((targetRect.top - containerRect.top) / containerRect.height) * 100,

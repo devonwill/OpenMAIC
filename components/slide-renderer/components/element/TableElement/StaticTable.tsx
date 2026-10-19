@@ -1,3 +1,10 @@
+/**
+ * 本文件：表格的静态渲染组件（编辑态与只读态共用）。
+ * 职责：按主题色、边框与行列尺寸渲染 <table>，
+ *       处理表头/表尾配色、隔行变色与合并单元格跳过。
+ * 关键点：主题配色按「行列表头 → 表尾 → 隔行」优先级叠加，
+ *       单元格自带样式优先于主题；非法宽高需回退默认值防除零。
+ */
 'use client';
 
 import { useMemo } from 'react';
@@ -12,6 +19,7 @@ interface StaticTableProps {
 /**
  * Static table rendering component, ported from PPTist StaticTable.vue.
  * Renders table data with theme colors, outline borders, and merged cells.
+ * 中文：移植自 PPTist 的静态表格，纯展示、无交互。
  */
 export function StaticTable({ elementInfo }: StaticTableProps) {
   const { width, data, colWidths, rowHeights, cellMinHeight, outline, theme } = elementInfo;
@@ -21,6 +29,7 @@ export function StaticTable({ elementInfo }: StaticTableProps) {
     () => (Array.isArray(rowHeights) ? rowHeights : []),
     [rowHeights],
   );
+  // 列宽为相对比例（0-1），乘以表格总宽换算为像素；非法值按 1 计
   const safeWidth = Number.isFinite(width) && width > 0 ? width : 1;
   const safeCellMinHeight =
     Number.isFinite(cellMinHeight) && cellMinHeight >= 0 ? cellMinHeight : 40;
@@ -42,6 +51,8 @@ export function StaticTable({ elementInfo }: StaticTableProps) {
 
   /**
    * Get background color for a cell based on theme and position
+   * 中文：单元格背景优先级：单元格自带颜色 > 行/列表头表尾主题色 >
+   *       隔行浅色；隔行计数需扣掉表头行，保证斑马纹相位一致。
    */
   const getCellBg = (
     rowIdx: number,

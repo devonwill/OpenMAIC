@@ -203,10 +203,29 @@ interface SettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialSection?: SettingsSection;
+  /** 限制只展示这些 section；空数组 = 全部。
+   *  用于把大模型（providers）从系统设置里独立成单独对话框，保留一份实现。 */
+  allowedSections?: ReadonlyArray<SettingsSection>;
+  /** 侧栏顶部的小标题；空 = 默认"设置"。 */
+  title?: string;
 }
 
-export function SettingsDialog({ open, onOpenChange, initialSection }: SettingsDialogProps) {
+export function SettingsDialog({
+  open,
+  onOpenChange,
+  initialSection,
+  allowedSections,
+  title,
+}: SettingsDialogProps) {
   const { t } = useI18n();
+
+  // sectionFilter 必须稳定（useEffect 依赖它做 initialSection → activeSection 同步），
+  // 所以用 useMemo 锁住输入依赖；allowedSections 来自父级 prop，引用通常是稳定的。
+  const sectionFilter = useCallback(
+    (section: SettingsSection) =>
+      !allowedSections || allowedSections.length === 0 || allowedSections.includes(section),
+    [allowedSections],
+  );
 
   // Get settings from store
   const providerId = useSettingsStore((state) => state.providerId);
@@ -232,7 +251,14 @@ export function SettingsDialog({ open, onOpenChange, initialSection }: SettingsD
   const setASRProvider = useSettingsStore((state) => state.setASRProvider);
 
   // Navigation
-  const [activeSection, setActiveSection] = useState<SettingsSection>('providers');
+  // 当 allowedSections 限定后，初始 activeSection 必须落在允许集合里，否则侧栏选中态/详情都对不上。
+  // 优先级：initialSection（若允许）→ allowedSections 第一个 → 默认 'providers'。
+  const defaultActiveSection: SettingsSection = (() => {
+    if (initialSection && sectionFilter(initialSection)) return initialSection;
+    if (allowedSections && allowedSections.length > 0) return allowedSections[0];
+    return 'providers';
+  })();
+  const [activeSection, setActiveSection] = useState<SettingsSection>(defaultActiveSection);
   const [selectedProviderId, setSelectedProviderId] = useState<ProviderId>(providerId);
   const [selectedPdfProviderId, setSelectedPdfProviderId] = useState<PDFProviderId>(pdfProviderId);
   const [selectedWebSearchProviderId, setSelectedWebSearchProviderId] =
@@ -252,11 +278,11 @@ export function SettingsDialog({ open, onOpenChange, initialSection }: SettingsD
   );
   // Navigate to initialSection when dialog opens
   useEffect(() => {
-    if (open && initialSection) {
+    if (open && initialSection && sectionFilter(initialSection)) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- Sync section from prop when dialog opens
       setActiveSection(initialSection);
     }
-  }, [open, initialSection]);
+  }, [open, initialSection, sectionFilter]);
 
   // Model editing state
   const [editingModel, setEditingModel] = useState<EditingModel | null>(null);
@@ -752,135 +778,160 @@ export function SettingsDialog({ open, onOpenChange, initialSection }: SettingsD
         <div className="flex h-full overflow-hidden">
           {/* Left Sidebar - Navigation */}
           <div className="flex-shrink-0 bg-muted/30 p-3 space-y-1" style={{ width: sidebarWidth }}>
-            <button
-              onClick={() => setActiveSection('token-plan')}
-              className={cn(
-                'w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors text-left min-w-0',
-                activeSection === 'token-plan'
-                  ? 'bg-primary/10 text-primary font-medium'
-                  : 'hover:bg-muted',
-              )}
-            >
-              <CreditCard className="h-4 w-4 shrink-0" />
-              <span className="truncate">{t('settings.tokenPlan.nav')}</span>
-            </button>
+            {title && (
+              <div className="px-3 pb-2 pt-1 text-xs font-semibold text-muted-foreground/70 truncate">
+                {title}
+              </div>
+            )}
+            {sectionFilter('token-plan') && (
+              <button
+                onClick={() => setActiveSection('token-plan')}
+                className={cn(
+                  'w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors text-left min-w-0',
+                  activeSection === 'token-plan'
+                    ? 'bg-primary/10 text-primary font-medium'
+                    : 'hover:bg-muted',
+                )}
+              >
+                <CreditCard className="h-4 w-4 shrink-0" />
+                <span className="truncate">{t('settings.tokenPlan.nav')}</span>
+              </button>
+            )}
 
-            <button
-              onClick={() => setActiveSection('providers')}
-              className={cn(
-                'w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors text-left min-w-0',
-                activeSection === 'providers'
-                  ? 'bg-primary/10 text-primary font-medium'
-                  : 'hover:bg-muted',
-              )}
-            >
-              <Box className="h-4 w-4 shrink-0" />
-              <span className="truncate">{t('settings.providers')}</span>
-            </button>
+            {sectionFilter('providers') && (
+              <button
+                onClick={() => setActiveSection('providers')}
+                className={cn(
+                  'w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors text-left min-w-0',
+                  activeSection === 'providers'
+                    ? 'bg-primary/10 text-primary font-medium'
+                    : 'hover:bg-muted',
+                )}
+              >
+                <Box className="h-4 w-4 shrink-0" />
+                <span className="truncate">{t('settings.providers')}</span>
+              </button>
+            )}
 
-            <button
-              onClick={() => setActiveSection('image')}
-              className={cn(
-                'w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors text-left min-w-0',
-                activeSection === 'image'
-                  ? 'bg-primary/10 text-primary font-medium'
-                  : 'hover:bg-muted',
-              )}
-            >
-              <ImageIcon className="h-4 w-4 shrink-0" />
-              <span className="truncate">{t('settings.imageSettings')}</span>
-            </button>
+            {sectionFilter('image') && (
+              <button
+                onClick={() => setActiveSection('image')}
+                className={cn(
+                  'w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors text-left min-w-0',
+                  activeSection === 'image'
+                    ? 'bg-primary/10 text-primary font-medium'
+                    : 'hover:bg-muted',
+                )}
+              >
+                <ImageIcon className="h-4 w-4 shrink-0" />
+                <span className="truncate">{t('settings.imageSettings')}</span>
+              </button>
+            )}
 
-            <button
-              onClick={() => setActiveSection('video')}
-              className={cn(
-                'w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors text-left min-w-0',
-                activeSection === 'video'
-                  ? 'bg-primary/10 text-primary font-medium'
-                  : 'hover:bg-muted',
-              )}
-            >
-              <Film className="h-4 w-4 shrink-0" />
-              <span className="truncate">{t('settings.videoSettings')}</span>
-            </button>
+            {sectionFilter('video') && (
+              <button
+                onClick={() => setActiveSection('video')}
+                className={cn(
+                  'w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors text-left min-w-0',
+                  activeSection === 'video'
+                    ? 'bg-primary/10 text-primary font-medium'
+                    : 'hover:bg-muted',
+                )}
+              >
+                <Film className="h-4 w-4 shrink-0" />
+                <span className="truncate">{t('settings.videoSettings')}</span>
+              </button>
+            )}
 
-            <button
-              onClick={() => setActiveSection('tts')}
-              className={cn(
-                'w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors text-left min-w-0',
-                activeSection === 'tts'
-                  ? 'bg-primary/10 text-primary font-medium'
-                  : 'hover:bg-muted',
-              )}
-            >
-              <Volume2 className="h-4 w-4 shrink-0" />
-              <span className="truncate">{t('settings.ttsSettings')}</span>
-            </button>
+            {sectionFilter('tts') && (
+              <button
+                onClick={() => setActiveSection('tts')}
+                className={cn(
+                  'w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors text-left min-w-0',
+                  activeSection === 'tts'
+                    ? 'bg-primary/10 text-primary font-medium'
+                    : 'hover:bg-muted',
+                )}
+              >
+                <Volume2 className="h-4 w-4 shrink-0" />
+                <span className="truncate">{t('settings.ttsSettings')}</span>
+              </button>
+            )}
 
-            <button
-              onClick={() => setActiveSection('asr')}
-              className={cn(
-                'w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors text-left min-w-0',
-                activeSection === 'asr'
-                  ? 'bg-primary/10 text-primary font-medium'
-                  : 'hover:bg-muted',
-              )}
-            >
-              <Mic className="h-4 w-4 shrink-0" />
-              <span className="truncate">{t('settings.asrSettings')}</span>
-            </button>
+            {sectionFilter('asr') && (
+              <button
+                onClick={() => setActiveSection('asr')}
+                className={cn(
+                  'w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors text-left min-w-0',
+                  activeSection === 'asr'
+                    ? 'bg-primary/10 text-primary font-medium'
+                    : 'hover:bg-muted',
+                )}
+              >
+                <Mic className="h-4 w-4 shrink-0" />
+                <span className="truncate">{t('settings.asrSettings')}</span>
+              </button>
+            )}
 
-            <button
-              onClick={() => setActiveSection('pdf')}
-              className={cn(
-                'w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors text-left min-w-0',
-                activeSection === 'pdf'
-                  ? 'bg-primary/10 text-primary font-medium'
-                  : 'hover:bg-muted',
-              )}
-            >
-              <FileText className="h-4 w-4 shrink-0" />
-              <span className="truncate">{t('settings.documentParsingSettings')}</span>
-            </button>
+            {sectionFilter('pdf') && (
+              <button
+                onClick={() => setActiveSection('pdf')}
+                className={cn(
+                  'w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors text-left min-w-0',
+                  activeSection === 'pdf'
+                    ? 'bg-primary/10 text-primary font-medium'
+                    : 'hover:bg-muted',
+                )}
+              >
+                <FileText className="h-4 w-4 shrink-0" />
+                <span className="truncate">{t('settings.documentParsingSettings')}</span>
+              </button>
+            )}
 
-            <button
-              onClick={() => setActiveSection('web-search')}
-              className={cn(
-                'w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors text-left min-w-0',
-                activeSection === 'web-search'
-                  ? 'bg-primary/10 text-primary font-medium'
-                  : 'hover:bg-muted',
-              )}
-            >
-              <Search className="h-4 w-4 shrink-0" />
-              <span className="truncate">{t('settings.webSearchSettings')}</span>
-            </button>
+            {sectionFilter('web-search') && (
+              <button
+                onClick={() => setActiveSection('web-search')}
+                className={cn(
+                  'w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors text-left min-w-0',
+                  activeSection === 'web-search'
+                    ? 'bg-primary/10 text-primary font-medium'
+                    : 'hover:bg-muted',
+                )}
+              >
+                <Search className="h-4 w-4 shrink-0" />
+                <span className="truncate">{t('settings.webSearchSettings')}</span>
+              </button>
+            )}
 
-            <button
-              onClick={() => setActiveSection('skills')}
-              className={cn(
-                'w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors text-left min-w-0',
-                activeSection === 'skills'
-                  ? 'bg-primary/10 text-primary font-medium'
-                  : 'hover:bg-muted',
-              )}
-            >
-              <Sparkles className="h-4 w-4 shrink-0" />
-              <span className="truncate">{t('settings.skills.nav')}</span>
-            </button>
+            {sectionFilter('skills') && (
+              <button
+                onClick={() => setActiveSection('skills')}
+                className={cn(
+                  'w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors text-left min-w-0',
+                  activeSection === 'skills'
+                    ? 'bg-primary/10 text-primary font-medium'
+                    : 'hover:bg-muted',
+                )}
+              >
+                <Sparkles className="h-4 w-4 shrink-0" />
+                <span className="truncate">{t('settings.skills.nav')}</span>
+              </button>
+            )}
 
-            <button
-              onClick={() => setActiveSection('general')}
-              className={cn(
-                'w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors text-left min-w-0',
-                activeSection === 'general'
-                  ? 'bg-primary/10 text-primary font-medium'
-                  : 'hover:bg-muted',
-              )}
-            >
-              <Settings className="h-4 w-4 shrink-0" />
-              <span className="truncate">{t('settings.systemSettings')}</span>
-            </button>
+            {sectionFilter('general') && (
+              <button
+                onClick={() => setActiveSection('general')}
+                className={cn(
+                  'w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors text-left min-w-0',
+                  activeSection === 'general'
+                    ? 'bg-primary/10 text-primary font-medium'
+                    : 'hover:bg-muted',
+                )}
+              >
+                <Settings className="h-4 w-4 shrink-0" />
+                <span className="truncate">{t('settings.systemSettings')}</span>
+              </button>
+            )}
           </div>
 
           {/* Sidebar resize handle */}

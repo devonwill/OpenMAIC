@@ -1,3 +1,10 @@
+/**
+ * 本文件：输入区发送/停止按钮的乐观状态规则（纯函数）。
+ * 职责：定义「按下发送立即显示 STOP」「接受停止后显示 stopping 标签」
+ * 两个过渡态的置位与撤销时机，不等 runner 生命周期事件的往返。
+ * 关键点：pendingSend 在会话状态离开按下时的值时才撤销；pendingStop
+ * 问的是「还在运行吗」而非「状态变过吗」，避免终态下按钮永远卡死。
+ */
 'use client';
 
 /**
@@ -27,20 +34,23 @@
  * The stop flag is the mirror image and answers a different question — see
  * `shouldDropPendingStop`.
  */
+
 import type { SessionStatus } from '@/lib/workbench/session-store';
 
-/** Whether the fold itself says a run is in flight. */
+/** 会话 fold 自身声明运行中（running / queued / connecting）。 */
 export function isRunLive(status: SessionStatus): boolean {
   return status === 'running' || status === 'queued' || status === 'connecting';
 }
 
 /** Whether the composer should show STOP (the run is live) instead of send. */
+/** 输入区是否应显示 STOP 而非发送：运行中或发送已乐观置位。 */
 export function isComposerLive(input: { status: SessionStatus; pendingSend: boolean }): boolean {
   const { status, pendingSend } = input;
   return isRunLive(status) || pendingSend;
 }
 
 /** Explain the intentionally disabled refs-only send state in the composer. */
+/** 只有引用没有文字时禁发并给出提示，说明「需要一句话说明意图」。 */
 export function shouldPromptForRefInstruction(input: {
   hasElementRefs: boolean;
   hasText: boolean;
@@ -54,6 +64,7 @@ export function shouldPromptForRefInstruction(input: {
  * the flag has been cleared (POST failure or a previous drop), which never
  * drops.
  */
+/** 乐观 STOP 的撤销条件：状态已离开发送时记录的值（runner 确认或终态落定）。 */
 export function shouldDropPendingSend(input: {
   pendingSend: boolean;
   status: SessionStatus;
@@ -82,6 +93,7 @@ export function shouldDropPendingSend(input: {
  * come, and stick on "stopping" forever. Asking "is it still live" cannot
  * strand the button.
  */
+/** 乐观「停止中」的撤销条件：会话不再处于运行态即撤，防按钮卡在 stopping。 */
 export function shouldDropPendingStop(input: {
   pendingStop: boolean;
   status: SessionStatus;

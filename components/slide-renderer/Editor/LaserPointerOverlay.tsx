@@ -1,3 +1,12 @@
+/**
+ * 本文件：激光笔指针的实测定位覆盖层（编辑画布版）。
+ * 职责：读取 canvas store 的 laserElementId/laserOptions，用
+ *       getBoundingClientRect 实测目标元素中心，换算为容器百分比坐标，
+ *       交给 LaserOverlay 播放激光点动画。
+ * 关键点：编辑画布原本没有激光渲染面，缺此层时 laser 提示会被降级为
+ *       聚光灯；容器不设 overflow-hidden，激光可从画外飞入。
+ */
+
 'use client';
 
 import { useRef, useState, useLayoutEffect, useCallback } from 'react';
@@ -27,6 +36,9 @@ interface LaserPointerOverlayProps {
  * (`getBoundingClientRect`) to place the laser dot at its center. Without this,
  * the edit canvas had no laser surface, so laser cues had nowhere to render and
  * were collapsed into a spotlight instead.
+ *
+ * 中文：store 驱动的激光笔覆盖层，是 SpotlightOverlay 的激光兄弟组件；
+ * 通过实测 DOM 元素位置把激光点放到目标中心，让编辑画布也具备激光渲染面。
  */
 export function LaserPointerOverlay({
   domIdPrefix = SCREEN_ELEMENT_ID_PREFIX,

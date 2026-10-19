@@ -31,6 +31,7 @@ import { defaultWorkbenchTranslator, type WorkbenchTranslator } from '@/lib/i18n
  * `multiSelect` with an empty option list is `open`, not `multi`: there is
  * nothing to select, so the only honest shape is the one the payload describes.
  */
+/** 判定问题形态：无选项为 open，有选项按 multiSelect 分 single/multi（空选项的 multi 归为 open）。 */
 export function questionMode(node: ChatNode): 'open' | 'single' | 'multi' {
   const options = node.questionOptions ?? [];
   if (options.length === 0) return 'open';
@@ -45,6 +46,7 @@ export function questionMode(node: ChatNode): 'open' | 'single' | 'multi' {
  * path at all means the host cannot post anything, so the options render as the
  * record of what was offered rather than as an action that cannot happen.
  */
+/** 控件是否锁定：已作答、发送中或宿主无发送通道时置灰，选项退化为记录。 */
 export function isQuestionLocked(input: {
   answered: boolean;
   sending: boolean;
@@ -54,6 +56,7 @@ export function isQuestionLocked(input: {
 }
 
 /** Toggle one option id in a multi-select set, preserving click order. */
+/** 在多选集合中增删一个选项 id，保持点击顺序。 */
 export function togglePicked(picked: readonly string[], id: string): string[] {
   return picked.includes(id) ? picked.filter((current) => current !== id) : [...picked, id];
 }
@@ -63,6 +66,7 @@ export function togglePicked(picked: readonly string[], id: string): string[] {
  * in the user's own bubble, so it reads with the CJK enumeration comma in
  * Chinese and "A, B" elsewhere.
  */
+/** 多选答案的分隔符，按语言环境取（中文用顿号/中文枚举逗号）。 */
 export function multiAnswerSeparator(t: WorkbenchTranslator): string {
   return t('workbench.question.multiAnswerSeparator');
 }
@@ -75,6 +79,7 @@ export function multiAnswerSeparator(t: WorkbenchTranslator): string {
  * user tapped them in. Ids the envelope does not contain are ignored — the
  * answer can only ever be built from what was actually offered.
  */
+/** 把多选拼成一条消息：按信封（出题）顺序而非点击顺序，信封外的 id 忽略。 */
 export function answerTextFor(
   options: readonly QuestionOption[],
   picked: readonly string[],
@@ -95,6 +100,7 @@ export function answerTextFor(
  * below" — that box has become the question's own form, so the sentence would be
  * describing something that is not there.
  */
+/** 只有多选未作答时给一句「勾选不等于发送」的提示，其余场景不加噪音。 */
 export function questionHint(
   node: ChatNode,
   t: WorkbenchTranslator = defaultWorkbenchTranslator,
@@ -116,6 +122,7 @@ export function questionHint(
  * the form and the card two views of one fact instead of two states that can
  * disagree.
  */
+/** 输入区当前应展示的问题：从后向前找第一个未作答的 question 节点。 */
 export function pendingQuestion(chat: readonly ChatNode[]): ChatNode | null {
   for (let i = chat.length - 1; i >= 0; i -= 1) {
     const node = chat[i];
@@ -134,6 +141,7 @@ export function pendingQuestion(chat: readonly ChatNode[]): ChatNode | null {
  * — the surface is about to be retired, and clearing first would flash the
  * buttons live again.
  */
+/** 作答 Hook：管理多选集合与发送窗口；发送失败复位 sending，成功后不复位以免按钮闪回。 */
 export function useQuestionAnswer(
   node: ChatNode,
   onAnswer?: (text: string) => Promise<boolean>,

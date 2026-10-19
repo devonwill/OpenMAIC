@@ -6,6 +6,7 @@ import {
   type ConnectableQueryable,
 } from '@openmaic/storage/server/reference';
 import { Pool } from 'pg';
+import { createLogger } from '@/lib/logger';
 
 import { validateAppScene, validateAppStage } from '@/lib/document-store/validators';
 import { lazyAssetByteStore } from '@/lib/persistence/asset-byte-store';
@@ -13,8 +14,22 @@ import { resolveAssetPendingTtlMs } from '@/lib/persistence/asset-pending-ttl';
 import { resolveAssetQuotaBytes } from '@/lib/persistence/asset-quota';
 import { ensureOwnerMaterialSchema } from '@/lib/persistence/owner-materials';
 import { ensureStageMetaSchema } from '@/lib/persistence/stage-meta';
+import { ensureMediaSharingSchema } from '@/lib/sharing/media-store';
 import { ensureAuthSchema } from '@/lib/server/auth/store';
 import { APP_RUNTIME_PAYLOAD_VALIDATORS } from '@/lib/runtime/payload-validators';
+
+const log = createLogger('PersistenceProvider');
+
+function defaultPoolFactory(connectionString: string): Pool {
+  const pool = new Pool({
+    connectionString,
+    connectionTimeoutMillis: 10_000,
+    idleTimeoutMillis: 30_000,
+  });
+  // Idle clients may emit errors after a database restart; an unhandled event crashes Node.
+  pool.on('error', (error) => log.error('Idle database connection failed:', error));
+  return pool;
+}
 
 export type PersistencePoolFactory = (connectionString: string) => Pool;
 
@@ -57,6 +72,7 @@ async function createServerPersistenceProvider(
     await ensureOwnerMaterialSchema(queryable);
     await ensureAuthSchema(queryable);
     await ensureAssetSchema(queryable);
+    await ensureMediaSharingSchema(queryable);
     const withTransaction = nodePostgresTransaction(queryable);
     const byteStore = lazyAssetByteStore(process.env.ASSET_S3_BUCKET, queryable);
     const documentStore = new PgDocumentStore(queryable, {
@@ -123,9 +139,10 @@ async function createServerPersistenceProvider(
  */
 export function getServerPersistenceProvider(
   connectionString: string,
-  poolFactory: PersistencePoolFactory = (value) => new Pool({ connectionString: value }),
+  poolFactory: PersistencePoolFactory = defaultPoolFactory,
 ): Promise<ServerPersistenceProvider> {
   const key = connectionString.trim();
+  if (!key) return Promise.reject(new Error('DATABASE_URL must not be empty'));
   if (providerState.providerPromise && providerState.connectionString === key) {
     return providerState.providerPromise;
   }

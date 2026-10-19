@@ -1,12 +1,15 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSettingsStore } from '@/lib/store/settings';
 import { useBrowserTTS } from '@/lib/hooks/use-browser-tts';
 import {
   resolveAgentVoice,
+  resolveExplicitAgentVoice,
   resolveNarratorVoiceBinding,
+  getEnabledProvidersWithVoices,
   getSelectableProvidersWithVoices,
+  resolveGlobalCloneOverride,
   type ResolvedVoice,
 } from '@/lib/audio/voice-resolver';
 import { isTTSProviderEnabled } from '@/lib/audio/provider-enablement';
@@ -66,7 +69,28 @@ export function useDiscussionTTS({ enabled, agents, onAudioStateChange }: Discus
   const globalTtsProviderId = useSettingsStore((s) => s.ttsProviderId);
   const globalTtsVoice = useSettingsStore((s) => s.ttsVoice);
   const agentVoiceOverrides = useSettingsStore((s) => s.agentVoiceOverrides);
+  const useMyCloneVoice = useSettingsStore((s) => s.useMyCloneVoice);
+  const myCloneVoiceId = useSettingsStore((s) => s.myCloneVoiceId);
+  const myCloneVoiceProvider = useSettingsStore((s) => s.myCloneVoiceProvider);
   const { profiles: voiceProfiles } = useAllVoiceProfiles();
+
+  // Global clone-voice override — one enabled-provider list (browser-native
+  // excluded; clone voices live on server/custom providers) feeds the resolver.
+  // Null while the switch is off or the picked clone's provider is unavailable.
+  const cloneOverride = useMemo(
+    () =>
+      resolveGlobalCloneOverride(
+        { useMyCloneVoice, myCloneVoiceId, myCloneVoiceProvider },
+        getEnabledProvidersWithVoices(ttsProvidersConfig, voiceProfiles),
+      ),
+    [
+      useMyCloneVoice,
+      myCloneVoiceId,
+      myCloneVoiceProvider,
+      ttsProvidersConfig,
+      voiceProfiles,
+    ],
+  );
 
   const queueRef = useRef<QueueItem[]>([]);
   const isPlayingRef = useRef(false);
@@ -171,6 +195,12 @@ export function useDiscussionTTS({ enabled, agents, onAudioStateChange }: Discus
         },
         ttsProvidersConfig,
       );
+      // A deliberate per-agent pick (voice pill / generated binding) beats
+      // the global clone default; the default replaces both the preferred
+      // voice and its global fallback — a teacher must never alternate back
+      // to the lecture voice mid-discussion while the switch is on.
+      const explicitVoice = resolveExplicitAgentVoice(agent, providers, agentVoiceOverrides);
+      const finalGlobalVoice = cloneOverride ?? globalVoice;
       // Teacher's voice = the global lecture selection, honored VERBATIM (incl.
       // its model) whenever that provider is enabled — identical to what the
       // pre-generated lecture sends (use-scene-generator), so lecture and
@@ -187,20 +217,26 @@ export function useDiscussionTTS({ enabled, agents, onAudioStateChange }: Discus
           },
           ttsProvidersConfig,
         );
+        const preferredVoice = explicitVoice ?? cloneOverride ?? resolved;
         const preferred = isTTSProviderEnabled(
-          resolved.providerId,
-          ttsProvidersConfig[resolved.providerId],
+          preferredVoice.providerId,
+          ttsProvidersConfig[preferredVoice.providerId],
         )
-          ? resolved
+          ? preferredVoice
           : firstVoice();
-        return applyUnavailableBindingFallback(agent.id, preferred, globalVoice, firstVoice);
+        return applyUnavailableBindingFallback(
+          agent.id,
+          preferred,
+          finalGlobalVoice,
+          firstVoice,
+        );
       }
 
       const index = agentIndexMap.current.get(agentId!) ?? 0;
       return applyUnavailableBindingFallback(
         agent.id,
-        resolveAgentVoice(agent, index, providers, agentVoiceOverrides),
-        globalVoice,
+        explicitVoice ?? cloneOverride ?? resolveAgentVoice(agent, index, providers, agentVoiceOverrides),
+        finalGlobalVoice,
         firstVoice,
       );
 
@@ -228,6 +264,7 @@ export function useDiscussionTTS({ enabled, agents, onAudioStateChange }: Discus
       globalTtsProviderId,
       globalTtsVoice,
       agentVoiceOverrides,
+      cloneOverride,
     ],
   );
 
@@ -442,7 +479,8 @@ export function useDiscussionTTS({ enabled, agents, onAudioStateChange }: Discus
       );
       const fallbackVoice =
         agentId && providerId === 'qwen-tts' && isQwenCloneVoice(voiceId)
-          ? resolveNarratorVoiceBinding(
+          ? (cloneOverride ??
+            resolveNarratorVoiceBinding(
               undefined,
               {
                 providerId: globalTtsProviderId,
@@ -450,7 +488,7 @@ export function useDiscussionTTS({ enabled, agents, onAudioStateChange }: Discus
                 modelId: ttsProvidersConfig[globalTtsProviderId]?.modelId,
               },
               ttsProvidersConfig,
-            )
+            ))
           : undefined;
       queueRef.current.push({
         messageId,
@@ -479,8 +517,28 @@ export function useDiscussionTTS({ enabled, agents, onAudioStateChange }: Discus
       resolveVoiceForAgent,
       ttsMuted,
       ttsProvidersConfig,
+      cloneOverride,
     ],
   );
+
+  // Warn once while a clone voice is picked but the override cannot resolve
+  // (provider disabled). Gated on `myCloneVoiceId`: the switch now ships on
+  // by default, and before a voice is picked (none registered yet, sync still
+  // loading) the fallback is the intended behavior, not a breakage. The ref
+  // dedupes across re-renders; it resets when the switch is turned off or the
+  // override becomes usable again, so a later breakage warns anew instead of
+  // toasting on every render.
+  const cloneUnavailableToastRef = useRef(false);
+  useEffect(() => {
+    if (useMyCloneVoice && myCloneVoiceId && !cloneOverride) {
+      if (!cloneUnavailableToastRef.current) {
+        cloneUnavailableToastRef.current = true;
+        toast.warning('克隆声音不可用，已回退默认音色');
+      }
+    } else {
+      cloneUnavailableToastRef.current = false;
+    }
+  }, [useMyCloneVoice, myCloneVoiceId, cloneOverride]);
 
   const cleanup = useCallback(() => {
     pausedRef.current = false;

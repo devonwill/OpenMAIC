@@ -314,7 +314,7 @@ describe('floating insert toolbar', () => {
       expect(layer().style[side]).toBe(picker.style[side]);
     }
 
-    // While picking, the strip rises over the picker so the violet ring cannot
+    // While picking, the strip rises over the picker so the selection ring cannot
     // paint across it — and takes no pointer events up there, so a click in its
     // area still reaches the picker and means "pick this element".
     expect(layer().style.zIndex).toBe(String(CANVAS_OVERLAY_Z.paletteOverPicker));

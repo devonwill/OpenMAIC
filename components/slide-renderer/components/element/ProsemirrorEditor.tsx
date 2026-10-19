@@ -1,3 +1,10 @@
+/**
+ * 本文件：ProseMirror 富文本编辑器封装组件。
+ * 职责：初始化编辑器视图、把工具栏/事件总线的富文本命令映射为 ProseMirror
+ *       操作，并将文本属性同步回画布 store。
+ * 关键点：编辑器只初始化一次，通过 mutable ref 读取最新的 editable/回调；
+ *         输入用 300ms 防抖回写，撤销/重做时跳过历史快照。
+ */
 'use client';
 
 import { useRef, useEffect, useCallback, useMemo, useImperativeHandle, forwardRef } from 'react';
@@ -53,6 +60,9 @@ export interface ProsemirrorEditorRef {
 /**
  * ProseMirror rich text Editor component
  * Handles complex text editing with support for formatting, lists, links, etc.
+ *
+ * 中文：无 target 的命令只在当前持有编辑焦点的元素上执行；
+ *       字号缩小钳制在 12px 下限，防止缩到不可读。
  */
 export const ProsemirrorEditor = forwardRef<ProsemirrorEditorRef, ProsemirrorEditorProps>(
   (

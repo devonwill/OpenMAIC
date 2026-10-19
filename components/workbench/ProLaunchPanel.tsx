@@ -334,8 +334,8 @@ export function ProLaunchPanel({
               'ws-composer'
             : [
                 'rounded-2xl border backdrop-blur-xl transition-colors',
-                'bg-white/80 shadow-xl shadow-violet-500/[0.07] dark:bg-slate-900/80',
-                'border-violet-300/50 focus-within:border-violet-400/70 dark:border-violet-400/25',
+                'bg-white/80 shadow-xl shadow-blue-500/[0.07] dark:bg-slate-900/80',
+                'border-blue-300/50 focus-within:border-blue-400/70 dark:border-blue-400/25',
               ],
         )}
         onDragOver={(event) => {
@@ -498,7 +498,7 @@ function ProLaunchSend({ canSend, onSubmit }: { canSend: boolean; onSubmit: () =
       className={cn(
         'inline-flex size-8 items-center justify-center rounded-lg transition-all duration-200',
         canSend
-          ? 'bg-violet-600 text-white shadow-sm shadow-violet-600/25 hover:opacity-90'
+          ? 'bg-blue-600 text-white shadow-sm shadow-blue-600/25 hover:opacity-90'
           : 'bg-muted text-muted-foreground/40',
       )}
     >

@@ -5,6 +5,8 @@ import {
   isQwenCatalogVoice,
   isQwenCloneVoice,
   isQwenVoiceCloneModel,
+  isXiaomiCatalogVoice,
+  isXiaomiVoiceCloneModel,
   resolveTTSModelForVoice,
   TTS_PROVIDERS,
 } from '@/lib/audio/constants';
@@ -68,31 +70,21 @@ export function resolveNarratorVoiceBinding(
 }
 
 /**
- * Resolve the TTS provider + voice for an agent, choosing only among ENABLED
- * providers (`enabledProviders` is the output of getEnabledProvidersWithVoices,
- * which already excludes disabled/unconfigured providers and browser-native).
+ * Resolve the agent's EXPLICIT voice pick — the persisted per-agent override
+ * (settings store — survives reloads; registry records for default/generated
+ * agents do not), falling back to the agent's own voiceConfig. Returns null
+ * when neither candidate is usable (missing, blank, provider disabled, or an
+ * unknown voice for catalog-bound providers).
  *
- * 1. If the user picked a voice for this agent (persisted `overrides`, keyed by
- *    agent id) whose provider is in `enabledProviders` (and the voiceId is
- *    known), use it; the agent's own voiceConfig is validated the same way next.
- * 2. Otherwise, deterministically pick the first provider in the given list by
- *    index. Whether browser-native can be picked depends on the caller's list:
- *    getEnabledProvidersWithVoices excludes it, getSelectableProvidersWithVoices
- *    appends it LAST, so it is only the index target when it is the sole enabled
- *    provider (i.e. the user opted into browser-native only).
- * 3. If the list is empty, return null — the caller must skip TTS rather than
- *    silently falling back to browser-native (#665 symptom 4).
+ * Callers layer this ABOVE the global clone-voice default: an explicit
+ * per-agent pick is a deliberate choice for that one agent, while the global
+ * switch is only the default for agents with no explicit pick.
  */
-export function resolveAgentVoice(
+export function resolveExplicitAgentVoice(
   agent: AgentConfig,
-  agentIndex: number,
   enabledProviders: ProviderWithVoices[],
   overrides?: AgentVoiceOverrides,
 ): ResolvedVoice | null {
-  // Candidates in priority order: the user's persisted per-agent override
-  // (settings store — survives reloads; registry records for default/generated
-  // agents do not), then the agent's own voiceConfig. Each is honored only
-  // when its provider is still enabled and the voice is known.
   const candidates = [overrides?.[agent.id], agent.voiceConfig];
   for (const choice of candidates) {
     if (!choice) continue;
@@ -109,6 +101,18 @@ export function resolveAgentVoice(
     if (choice.providerId === 'qwen-tts') {
       const catalogVoice = isQwenCatalogVoice(choice.voiceId);
       if (catalogVoice || choice.voiceId.trim()) {
+        return {
+          providerId: choice.providerId,
+          modelId: resolveTTSModelForVoice(choice.providerId, choice.voiceId, choice.modelId),
+          voiceId: choice.voiceId,
+        };
+      }
+      continue;
+    }
+    // Xiaomi clone ids are locally stored reference clips — self-contained like
+    // Qwen clones — so they pass without catalog/model-group validation.
+    if (choice.providerId === 'xiaomi-tts') {
+      if (choice.voiceId.trim()) {
         return {
           providerId: choice.providerId,
           modelId: resolveTTSModelForVoice(choice.providerId, choice.voiceId, choice.modelId),
@@ -144,8 +148,40 @@ export function resolveAgentVoice(
     }
   }
 
+  return null;
+}
+
+/**
+ * Resolve the TTS provider + voice for an agent, choosing only among ENABLED
+ * providers (`enabledProviders` is the output of getEnabledProvidersWithVoices,
+ * which already excludes disabled/unconfigured providers and browser-native).
+ *
+ * 1. The agent's explicit pick (per-agent override, then voiceConfig), when
+ *    usable — see resolveExplicitAgentVoice.
+ * 2. Otherwise, deterministically pick the first provider in the given list by
+ *    index. Whether browser-native can be picked depends on the caller's list:
+ *    getEnabledProvidersWithVoices excludes it, getSelectableProvidersWithVoices
+ *    appends it LAST, so it is only the index target when it is the sole enabled
+ *    provider (i.e. the user opted into browser-native only).
+ * 3. If the list is empty, return null — the caller must skip TTS rather than
+ *    silently falling back to browser-native (#665 symptom 4).
+ *
+ * NOTE: callers that honor the global clone-voice default must check
+ * resolveExplicitAgentVoice FIRST and only fall through to the global default
+ * before this function — otherwise the default would shadow a deliberate
+ * per-agent pick.
+ */
+export function resolveAgentVoice(
+  agent: AgentConfig,
+  agentIndex: number,
+  enabledProviders: ProviderWithVoices[],
+  overrides?: AgentVoiceOverrides,
+): ResolvedVoice | null {
   // Fallback: deterministic pick among enabled providers (canonical order).
-  return resolveDeterministicFallbackVoice(enabledProviders, agentIndex);
+  return (
+    resolveExplicitAgentVoice(agent, enabledProviders, overrides) ??
+    resolveDeterministicFallbackVoice(enabledProviders, agentIndex)
+  );
 }
 
 /**
@@ -161,15 +197,52 @@ export function resolveDeterministicFallbackVoice(
 ): ResolvedVoice | null {
   if (enabledProviders.length === 0) return null;
   const first = enabledProviders[0];
+  // Only catalog voices are guaranteed usable without local/account state, so
+  // clone ids (Qwen enrollments, Xiaomi local reference clips) are excluded.
   const fallbackVoices =
     first.providerId === 'qwen-tts'
       ? first.voices.filter((voice) => isQwenCatalogVoice(voice.id))
-      : first.voices;
+      : first.providerId === 'xiaomi-tts'
+        ? first.voices.filter((voice) => isXiaomiCatalogVoice(voice.id))
+        : first.voices;
   if (fallbackVoices.length === 0) return null;
   return {
     providerId: first.providerId,
     voiceId: fallbackVoices[index % fallbackVoices.length].id,
   };
+}
+
+/**
+ * Global clone-voice override settings (settings store). When the switch is on,
+ * the picked clone voice replaces every AI teacher/narrator voice client-side.
+ */
+export interface GlobalCloneSettings {
+  useMyCloneVoice: boolean;
+  myCloneVoiceId: string;
+  myCloneVoiceProvider: string;
+}
+
+/**
+ * Resolve the global "use my cloned voice for every AI teacher" override.
+ *
+ * Returns null (callers keep their normal resolved/fallback voice) when the
+ * switch is off, the picked fields are blank, or the picked provider is not in
+ * the enabled-provider list. Clone ids are self-contained (Xiaomi local
+ * reference clips / Qwen enrollment ids) — existence implies validity, no
+ * catalog check — and the synthesis model follows the voice at every call site
+ * (resolveTTSModelForVoice), so the returned binding carries no modelId.
+ */
+export function resolveGlobalCloneOverride(
+  settings: GlobalCloneSettings,
+  enabledProviders: ProviderWithVoices[],
+): ResolvedVoice | null {
+  if (!settings.useMyCloneVoice) return null;
+  const voiceId = settings.myCloneVoiceId?.trim();
+  const providerId = settings.myCloneVoiceProvider?.trim();
+  if (!voiceId || !providerId) return null;
+  const provider = enabledProviders.find((p) => p.providerId === providerId);
+  if (!provider) return null;
+  return { providerId: provider.providerId, voiceId };
 }
 
 /**
@@ -310,15 +383,20 @@ export function getEnabledProvidersWithVoices(
       const modelGroups: ModelVoiceGroup[] = [];
       if (config.models.length > 0) {
         for (const model of config.models) {
-          const compatibleVoices =
-            providerId === 'qwen-tts' && isQwenVoiceCloneModel(model.id)
-              ? []
-              : config.voices
-                  .filter((v) => !v.compatibleModels || v.compatibleModels.includes(model.id))
-                  .map((v) => ({ id: v.id, name: v.name, language: v.language }));
+          // Clone model groups serve only locally registered clone voices;
+          // preset-voice groups on Qwen/Xiaomi exclude clone ids (model-follows-voice).
+          const cloneModelGroup =
+            (providerId === 'qwen-tts' && isQwenVoiceCloneModel(model.id)) ||
+            (providerId === 'xiaomi-tts' && isXiaomiVoiceCloneModel(model.id));
+          const separatesCloneModels = providerId === 'qwen-tts' || providerId === 'xiaomi-tts';
+          const compatibleVoices = cloneModelGroup
+            ? []
+            : config.voices
+                .filter((v) => !v.compatibleModels || v.compatibleModels.includes(model.id))
+                .map((v) => ({ id: v.id, name: v.name, language: v.language }));
           if (providerId === VOXCPM_TTS_PROVIDER_ID) {
             compatibleVoices.push(...userVoices);
-          } else if (providerId !== 'qwen-tts' || isQwenVoiceCloneModel(model.id)) {
+          } else if (cloneModelGroup || !separatesCloneModels) {
             compatibleVoices.push(...userVoices);
           }
           modelGroups.push({

@@ -1,3 +1,4 @@
+import { knowledgeRequestOwner, canReadKnowledge } from '@/lib/knowledge/access';
 /**
  * Scene Actions Generation API
  *
@@ -25,6 +26,9 @@ import type {
 import type { SpeechAction } from '@/lib/types/action';
 import type { PBLContent } from '@/lib/types/stage';
 import { createLogger } from '@/lib/logger';
+import { getClassroomKnowledge, loadKnowledge } from '@/lib/knowledge/server';
+import { normalizeQuota } from '@/lib/knowledge/quota';
+import { auditSceneCitations, type CitationAudit } from '@/lib/knowledge/citation';
 import { normalizeLegacyPBLContent } from '@/lib/pbl/legacy/read';
 import { apiError, apiSuccess } from '@/lib/server/api-response';
 import { llmApiError } from '@/lib/server/llm-error-response';
@@ -92,6 +96,21 @@ export async function POST(req: NextRequest) {
     outlineTitle = outline?.title;
     resolvedModelString = modelString;
 
+    // 知识库注入：actions（讲解词/交互指令）同样要引用图2 勾选的知识。
+    // 断网降级：webSearch 未显式开启时强制 web=0，引用只走本地与模型自身。
+    const knowledgeBody = (body as { knowledge?: { bundleIds?: string[]; quota?: null } })
+      .knowledge;
+    const knowledgeQuota = normalizeQuota(knowledgeBody?.quota ?? null);
+    if ((body as { requirements?: { webSearch?: boolean } }).requirements?.webSearch !== true) {
+      knowledgeQuota.web = 0;
+      knowledgeQuota.model = 100 - knowledgeQuota.local;
+    }
+    const knowledgeOwnerId = await knowledgeRequestOwner(req);
+    const knowledgeEvidence = await getClassroomKnowledge(
+      [outline.title, outline.description].join(' '),
+      { ownerId: knowledgeOwnerId, bundleIds: knowledgeBody?.bundleIds, quota: knowledgeQuota },
+    );
+
     // Detect vision capability
     const hasVision = !!modelInfo?.capabilities?.vision;
 
@@ -101,6 +120,7 @@ export async function POST(req: NextRequest) {
       userPrompt: string,
       images?: Array<{ id: string; src: string }>,
     ): Promise<string> => {
+      userPrompt += knowledgeEvidence;
       if (images?.length && hasVision) {
         const result = await callLLM(
           {
@@ -180,11 +200,26 @@ export async function POST(req: NextRequest) {
       .filter((a): a is SpeechAction => a.type === 'speech')
       .map((a) => a.text);
 
+    // ── 引用可追溯（P0-2）：比对整页文本里的 citation 与真实知识库 ──
+    // 无效引用（编造/未审核/越界）随 scene 一起返回，课堂画布的“本页引用”
+    // 清单会标红展示。审计失败不阻断生成（degrade, never fail）。
+    let citationAudit: CitationAudit | undefined;
+    try {
+      const { bundles } = await loadKnowledge();
+      const pageText = [scene.title, JSON.stringify(scene.content), JSON.stringify(scene.actions)].join('\n');
+      citationAudit = auditSceneCitations(bundles.filter((bundle) => canReadKnowledge(bundle, knowledgeOwnerId)), pageText, knowledgeBody?.bundleIds);
+    } catch (error) {
+      log.warn('Citation audit failed; scene returned without citationAudit:', error);
+    }
+
     log.info(
       `Scene assembled successfully: "${outline.title}" — ${scene.actions?.length ?? 0} actions`,
     );
 
-    return apiSuccess({ scene, previousSpeeches: outputPreviousSpeeches });
+    return apiSuccess({
+      scene: citationAudit ? { ...scene, citationAudit } : scene,
+      previousSpeeches: outputPreviousSpeeches,
+    });
   } catch (error) {
     log.error(
       `Scene actions generation failed [scene="${outlineTitle ?? 'unknown'}", model=${resolvedModelString ?? 'unknown'}]:`,

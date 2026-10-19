@@ -1,3 +1,10 @@
+/**
+ * 本文件：只读/回放态单个元素的渲染分发组件。
+ * 职责：按元素类型查表选择对应的 Base* 渲染组件，套上
+ *       层级、主题字体色与 DOM id 标识后渲染。
+ * 关键点：类型映射用 useMemo 按 elementInfo.type 记忆化；
+ *       未知类型返回 null 而非报错，容忍旧数据。
+ */
 'use client';
 
 import { ElementTypes, type PPTElement } from '@openmaic/dsl';
@@ -22,6 +29,10 @@ interface ScreenElementProps {
   readonly animate?: boolean;
 }
 
+/**
+ * 屏幕元素分发：根据元素类型选择只读渲染组件。
+ * 中文：未注册的类型直接不渲染（返回 null）。
+ */
 export function ScreenElement({ elementInfo, elementIndex, animate }: ScreenElementProps) {
   const CurrentElementComponent = useMemo(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- element components have varying prop signatures

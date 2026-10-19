@@ -50,7 +50,7 @@ export async function POST(request: Request) {
     // 注册即登录：直接签发会话。
     const { setSessionCookie, userView } = await import('@/lib/server/auth/session-cookie');
     await setSessionCookie(userId, db);
-    return apiSuccess({ user: userView(userId, input.email, input.role, input.displayName, input.phone) }, 201);
+    return apiSuccess({ user: userView(userId, input.email, input.role, input.displayName, input.phone, null) }, 201);
   } catch (error) {
     if (error instanceof EmailTakenError) {
       // 并发注册撞唯一索引时也会走到这里，与预查重复邮箱共用同一响应。

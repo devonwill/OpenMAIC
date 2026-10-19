@@ -1,3 +1,9 @@
+/**
+ * 本文件：互动内容缩略图组件。
+ * 职责：用 iframe 预览互动 HTML，按可见性懒挂载 iframe，并以 CSS 缩放
+ *       适配缩略图尺寸。
+ * 关键点：缩略图内屏蔽交互（pointer-events: none），沙箱限制 iframe 权限。
+ */
 import { useMemo, useRef, useState, useEffect } from 'react';
 import type { InteractiveContent } from '@/lib/types/stage';
 import { patchHtmlForIframe } from '@/lib/utils/iframe';
@@ -17,6 +23,9 @@ interface ThumbnailInteractiveProps {
  * Renders a thumbnail preview of interactive HTML content via iframe.
  * Uses IntersectionObserver for lazy loading - only mounts iframe when visible.
  * Uses CSS transform scale to resize the entire view for better performance.
+ *
+ * 中文：视口内外决定是否真正挂载 iframe；HTML 进入视口后才做 iframe 补丁，
+ * 减少不可见缩略图的内存开销。
  */
 export function ThumbnailInteractive({
   content,

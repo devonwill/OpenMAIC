@@ -16,6 +16,7 @@ import type {
   SceneContent as DslSceneContent,
 } from '@openmaic/dsl';
 import type { Action } from '@/lib/types/action';
+import type { CitationAudit } from '@/lib/knowledge/citation';
 import type { WidgetConfig } from '@/lib/types/widgets';
 import type { PBLProjectConfig } from '@/lib/pbl/legacy/read';
 import type { PBLProjectV2 } from '@/lib/pbl/v2/types';
@@ -107,6 +108,14 @@ export type AppScene = DslScene<Action, SceneContent> & {
    * scene-derived outline.
    */
   outlineId?: string;
+  /**
+   * 引用可追溯审计：本页生成文本中的 `[知识来源:…]` 标记与真实知识库的
+   * 比对结果（有效清单 + 无效引用及原因）。生成时由 scene-actions 路由写入，
+   * 课堂画布据此渲染“本页引用”角标/清单。同样是 app-layer annotation，
+   * 持久化与迁移路径均以 spread 保留。Absent on scenes generated without
+   * knowledge injection or pre-existing data.
+   */
+  citationAudit?: CitationAudit;
 };
 export type Scene = AppScene;
 

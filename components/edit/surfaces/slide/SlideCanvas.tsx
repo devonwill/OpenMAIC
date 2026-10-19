@@ -1,3 +1,10 @@
+/**
+ * 本文件：幻灯片编辑画布容器（新旧渲染器切换入口）。
+ * 职责：按 feature flag 在旧编辑器 Canvas 与 RendererEditorCanvas 间切换，
+ * 统一挂载聚光/激光笔覆盖层、锚定工具条、元素引用图钉层与拾取层。
+ * 关键点：legacy 模式下 useSyncEditingElementId 把解析后的编辑态写回 canvas store；
+ * 全局 Escape 监听用于取消"正在创建元素"的拖拽状态。
+ */
 'use client';
 
 import { useEffect } from 'react';
@@ -20,7 +27,11 @@ import {
 } from './use-slide-surface';
 import { RendererEditorCanvas } from './RendererEditorCanvas';
 
-/** Switches between the preserved legacy editor and the renderer editor. */
+/**
+ * Switches between the preserved legacy editor and the renderer editor.
+ * 中文要点：锚定工具条只在 legacy 分支挂载（新渲染器自带等价交互）；
+ * 选区/编辑态统一来自 use-slide-surface 的选择器 hooks。
+ */
 export function SlideCanvas() {
   const { controller, gestureProps } = useSlideCanvasController();
   const useRendererEditor = isEditorRendererEnabled();
@@ -32,6 +43,7 @@ export function SlideCanvas() {
   useSyncEditingElementId(editingElementId, !useRendererEditor);
 
   useEffect(() => {
+    // Escape 只处理"取消创建中元素"，不冒泡到上层，避免与其他快捷键抢事件
     const handler = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
       const canvas = useCanvasStore.getState();

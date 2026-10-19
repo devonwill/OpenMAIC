@@ -1,3 +1,10 @@
+/**
+ * 本文件：对话内课程链接组件（课程上屏的入口）。
+ * 职责：渲染可点击的课程链接（独立成行的 block 与行内胶囊 inline 两种形态），
+ * 以及一次回答尾部的课程卡片集合（SessionCourseLink）。
+ * 关键点：点击只做「把课程放到右侧面板」这一件事，无禁用态、无状态提示；
+ * 视觉全部收敛在 wbStyles.courseLink 一处。
+ */
 'use client';
 
 /**
@@ -47,6 +54,7 @@ import { useWorkbenchStore } from '@/lib/workbench/session-store';
 import { splitRunCourseCards } from '@/lib/workbench/course-link';
 import { wbStyles as styles } from './chat-styles';
 
+/** 课程链接：一次点击把课程放到右侧面板（面板关闭则展开），block / inline 两形态共用。 */
 export function CourseLink({
   courseId,
   variant,
@@ -71,6 +79,7 @@ export function CourseLink({
 }) {
   const { t } = useI18n();
   const navigation = useWorkbenchCourseNavigation();
+  // 经典工作台没有右侧面板，退化为纯文本回退，不提供打不开的动作。
   if (!navigation) return <>{fallback ?? label ?? courseId}</>;
 
   const summary = navigation.lookupCourse(courseId);
@@ -136,6 +145,7 @@ export function CourseLink({
  * `?session=` deep link attaches before the meta fetch lands) means nothing is
  * rendered rather than a link that cannot work.
  */
+/** 一次回答尾部的课程卡片：超过三张折叠为 +N，展开态是本地临时 UI 状态。 */
 export function SessionCourseLink({ stageIds }: { readonly stageIds?: readonly string[] }) {
   const { t } = useI18n();
   const sessionStageId = useWorkbenchStore((s) => s.stageId);

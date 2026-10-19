@@ -1,3 +1,8 @@
+/**
+ * 本文件：全屏播放返回工作台的控件。
+ * 职责：在课堂头部左侧渲染返回按钮，点击关闭 playback 模式、恢复对话区。
+ * 关键点：对话折叠与面板状态存于 store，返回时按原样恢复而非重建。
+ */
 'use client';
 
 /**
@@ -11,6 +16,7 @@ import { ArrowLeft } from 'lucide-react';
 import { useI18n } from '@/lib/hooks/use-i18n';
 import { useWorkbenchStore } from '@/lib/workbench/session-store';
 
+// 纯状态开关：仅把 playbackOn 置回 false，其余 UI 由 store 派生。
 export function WorkbenchReturnControl() {
   const { t } = useI18n();
   const setPlaybackOn = useWorkbenchStore((s) => s.setPlaybackOn);

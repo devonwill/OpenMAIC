@@ -44,7 +44,7 @@ export function LanguageSwitcher({ onOpen }: LanguageSwitcherProps) {
             className={cn(
               'cursor-pointer',
               locale === l.code &&
-                'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400',
+                'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400',
             )}
           >
             {l.label}

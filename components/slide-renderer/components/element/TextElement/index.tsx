@@ -1,3 +1,10 @@
+/**
+ * 本文件：编辑态文本元素组件（画布内可编辑）。
+ * 职责：定位与旋转文本盒，通过 ProseMirror 编辑内容，并用 ResizeObserver
+ *       自动回写文本真实高度/宽度（竖排时回写宽度）。
+ * 关键点：拖拽缩放期间只缓存测量值、缩放结束后才写回，避免与缩放互相覆盖；
+ *         失焦后若文本为空（去标签后）自动删除元素。
+ */
 'use client';
 
 import { useRef, useEffect, useState, useCallback } from 'react';
@@ -49,6 +56,7 @@ export function TextElement({ elementInfo, selectElement }: TextElementProps) {
     if (handleElementId !== elementInfo.id) return;
 
     if (!isScaling) {
+      // 缩放结束才把缓存的真实尺寸写回：缩放中写入会与拖拽产生的宽高冲突
       if (!elementInfo.vertical && realHeightCache !== -1) {
         updateElement({
           id: elementInfo.id,

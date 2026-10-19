@@ -1,3 +1,8 @@
+/**
+ * 本文件：Pro 模式徽章（工作台开关）。
+ * 职责：以 role="switch" 的小徽章表达整页模式开关，带开关语义与工具提示。
+ * 关键点：无 onToggle 时退化为纯展示徽章（disabled）；开态为紫底高亮，关态细边安静。
+ */
 'use client';
 
 /**
@@ -28,6 +33,7 @@ export interface ProBadgeProps {
   testId?: string;
 }
 
+/** Pro 模式徽章：active 表示已进入工作台；提供 onToggle 时可点击切换并显示提示。 */
 export function ProBadge({ active, onToggle, className, testId }: ProBadgeProps) {
   const { t } = useI18n();
   const reduceMotion = useReducedMotion();
@@ -51,15 +57,15 @@ export function ProBadge({ active, onToggle, className, testId }: ProBadgeProps)
         interactive ? 'cursor-pointer' : 'cursor-default',
         active
           ? [
-              'border-violet-500/70 bg-violet-600 text-white',
-              'shadow-[0_0_0_3px_rgba(139,92,246,0.14),0_1px_6px_rgba(109,40,217,0.35)]',
-              'dark:border-violet-400/60 dark:bg-violet-500',
+              'border-blue-500/70 bg-blue-600 text-white',
+              'shadow-[0_0_0_3px_rgba(96,165,250,0.14),0_1px_6px_rgba(30,64,175,0.35)]',
+              'dark:border-blue-400/60 dark:bg-blue-500',
             ]
           : [
               'border-border bg-background/70 text-muted-foreground',
-              'hover:border-violet-400/70 hover:bg-violet-50/60 hover:text-violet-600',
-              'dark:hover:bg-violet-500/10',
-              'dark:hover:border-violet-400/40 dark:hover:text-violet-300',
+              'hover:border-blue-400/70 hover:bg-blue-50/60 hover:text-blue-600',
+              'dark:hover:bg-blue-500/10',
+              'dark:hover:border-blue-400/40 dark:hover:text-blue-300',
             ],
         className,
       )}

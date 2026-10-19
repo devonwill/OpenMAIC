@@ -1,3 +1,10 @@
+/**
+ * 本文件：元素高亮特效覆盖层。
+ * 职责：在被高亮元素的位置叠加边框、发光与脉冲动画的覆盖 div，
+ * 不修改元素本身属性，支持多元素同时高亮。
+ * 关键点：line 元素无 height 属性需排除；覆盖层 pointer-events
+ *       关闭且 zIndex 固定，不阻挡画布交互。
+ */
 'use client';
 
 import { useMemo } from 'react';
@@ -19,6 +26,7 @@ import type { PPTElement } from '@openmaic/dsl';
  * - Creates overlay divs at element positions
  * - Uses box-shadow for glow effects
  * - Uses CSS animation for animated effects
+ * 中文：在元素位置创建覆盖层，box-shadow 做发光、CSS 动画做呼吸/闪烁。
  */
 export function HighlightOverlay() {
   const highlightedElementIds = useCanvasStore.use.highlightedElementIds();
@@ -30,6 +38,7 @@ export function HighlightOverlay() {
   );
 
   // Find all elements to highlight (exclude line elements as they have no height property)
+  // 中文：过滤出需高亮的元素；line 元素没有 height，覆盖层无法定位故排除
   const highlightedElements = useMemo(() => {
     if (!highlightedElementIds.length) return [];
     return elements.filter((el) => highlightedElementIds.includes(el.id) && el.type !== 'line');

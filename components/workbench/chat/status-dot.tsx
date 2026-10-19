@@ -1,3 +1,9 @@
+/**
+ * 本文件：统一状态点组件与状态归一化工具。
+ * 职责：把各来源的自由字符串状态映射为 5 种视觉语义
+ * （ok / error / running / suspended / idle），供工具行、工具组、rail 头部共用。
+ * 关键点：running 渲染为小转圈而非呼吸点，静态态一律是圆点。
+ */
 'use client';
 
 /**
@@ -11,6 +17,7 @@ import { wbStyles } from './chat-styles';
 
 export type StatusDotKind = 'ok' | 'error' | 'running' | 'suspended' | 'idle';
 
+/** 把多套上游状态词（done/success/in_progress/queued…）归并到统一枚举；未知值落到 idle。 */
 export function normalizeStatusDot(status?: string): StatusDotKind {
   switch (status) {
     case 'ok':
@@ -39,6 +46,7 @@ export function normalizeStatusDot(status?: string): StatusDotKind {
   }
 }
 
+// running 单独渲染为转圈图标，其余状态用带 data-kind 的圆点区分颜色。
 export function StatusDot({ status }: { status?: string }) {
   const kind = normalizeStatusDot(status);
   if (kind === 'running') {

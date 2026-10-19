@@ -23,7 +23,7 @@
  *  - ANSWER TEXT is derived from the picks every time. Submit is enabled iff that
  *    text is non-empty, so "disabled when nothing is picked or filled" needs no
  *    separate validity flag that could disagree with what would actually be sent.
- */
+  */
 import { useMemo, useState } from 'react';
 import type { ChatNode, QuestionOption } from '@/lib/workbench/session-store';
 import { defaultWorkbenchTranslator, type WorkbenchTranslator } from '@/lib/i18n/workbench';

@@ -1,3 +1,9 @@
+/**
+ * 本文件：班级名单编辑弹窗。
+ * 职责：以对话框承载 AgentRosterPanel，入口在 EditDock 全局栏。
+ * 关键点：关闭时面板不渲染，保证每次打开都从当前舞台文档重新物化名单；
+ * 关闭前必须 flushDrafts() 把未失焦的草稿直接提交到舞台，防止丢失编辑。
+ */
 'use client';
 
 import { useCallback, useLayoutEffect, useRef } from 'react';
@@ -38,6 +44,7 @@ interface RosterDialogProps {
  * so the dialog's own title is sr-only — Radix requires one for accessibility, and
  * showing it would double the heading.
  */
+// 名单弹窗：关闭路径（受控关闭与卸载）都要先冲刷面板草稿再交还控制权。
 export function RosterDialog({ open, onOpenChange }: RosterDialogProps) {
   const { t } = useI18n();
   const panelRef = useRef<AgentRosterPanelHandle>(null);

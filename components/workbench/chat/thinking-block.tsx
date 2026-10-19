@@ -1,3 +1,9 @@
+/**
+ * 本文件：思考条（推理内容）组件。
+ * 职责：仅有推理文本时挂载，默认折叠并显示最新一行预览，点击原地展开全文。
+ * 关键点：不是加载动画——状态更新不得擅自开合，折叠预览是流式期间
+ * 唯一「滚动」的元素。
+ */
 'use client';
 
 /**
@@ -14,6 +20,7 @@ import { formatDurationBetween } from './format';
 import { thinkingBarPreview, thinkingBarSummary, useThinkingBar } from './thinking-bar-state';
 import type { ToolStackPosition } from './tool-card';
 
+// 空文本直接不渲染；stackPosition 决定其在相邻卡片堆中的边框形态。
 export function ThinkingBlock({
   text,
   streaming = false,

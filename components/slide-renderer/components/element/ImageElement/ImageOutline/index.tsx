@@ -1,3 +1,8 @@
+/**
+ * 本文件：图片元素描边分发组件。
+ * 职责：按裁剪形状（矩形/椭圆/多边形）选择对应的描边绘制实现。
+ * 关键点：描边形状必须与 clip-path 形状一致，否则边框与图像轮廓错位。
+ */
 'use client';
 
 import type { PPTImageElement } from '@openmaic/dsl';
@@ -12,6 +17,8 @@ export interface ImageOutlineProps {
 
 /**
  * Image outline dispatcher based on clip shape type
+ *
+ * 中文：多边形描边依赖 clipShape.createPath，由 polygon 类型裁剪提供。
  */
 export function ImageOutline({ elementInfo }: ImageOutlineProps) {
   const { clipShape } = useClipImage(elementInfo);

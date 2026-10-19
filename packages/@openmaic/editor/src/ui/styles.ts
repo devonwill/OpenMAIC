@@ -88,8 +88,8 @@ export const EDITING_UI_STYLES = `
 
 .maic-editing-ui-context-menu-item:hover,
 .maic-editing-ui-context-menu-item:focus-visible {
-  background: var(--maic-editing-ui-active-bg, #ede9fe);
-  color: var(--maic-editing-ui-active-fg, #6d28d9);
+  background: var(--maic-editing-ui-active-bg, #eaf2fb);
+  color: var(--maic-editing-ui-active-fg, #044192);
   outline: none;
 }
 
@@ -212,8 +212,8 @@ export const EDITING_UI_STYLES = `
 .maic-editing-ui-table-grid-cell:hover,
 .maic-editing-ui-table-grid-cell:focus-visible,
 .maic-editing-ui-table-grid-cell[data-active] {
-  background: var(--maic-editing-ui-active-bg, #ede9fe);
-  border-color: var(--maic-editing-ui-active-fg, #6d28d9);
+  background: var(--maic-editing-ui-active-bg, #eaf2fb);
+  border-color: var(--maic-editing-ui-active-fg, #044192);
 }
 
 .maic-editing-ui-table-dimensions {
@@ -253,9 +253,9 @@ export const EDITING_UI_STYLES = `
 
 .maic-editing-ui-line-insert-option:hover,
 .maic-editing-ui-line-insert-option:focus-visible {
-  background: var(--maic-editing-ui-active-bg, #ede9fe);
-  border-color: var(--maic-editing-ui-active-fg, #6d28d9);
-  color: var(--maic-editing-ui-active-fg, #6d28d9);
+  background: var(--maic-editing-ui-active-bg, #eaf2fb);
+  border-color: var(--maic-editing-ui-active-fg, #044192);
+  color: var(--maic-editing-ui-active-fg, #044192);
   outline: none;
 }
 
@@ -296,8 +296,8 @@ export const EDITING_UI_STYLES = `
 }
 
 .maic-editing-ui-background-tab[data-active] {
-  background: var(--maic-editing-ui-active-bg, #ede9fe);
-  color: var(--maic-editing-ui-active-fg, #6d28d9);
+  background: var(--maic-editing-ui-active-bg, #eaf2fb);
+  color: var(--maic-editing-ui-active-fg, #044192);
 }
 
 .maic-editing-ui-background-color-field {
@@ -376,9 +376,9 @@ export const EDITING_UI_STYLES = `
 
 .maic-editing-ui-chart-picker-option:hover,
 .maic-editing-ui-chart-picker-option:focus-visible {
-  background: var(--maic-editing-ui-active-bg, #ede9fe);
-  border-color: var(--maic-editing-ui-active-fg, #6d28d9);
-  color: var(--maic-editing-ui-active-fg, #6d28d9);
+  background: var(--maic-editing-ui-active-bg, #eaf2fb);
+  border-color: var(--maic-editing-ui-active-fg, #044192);
+  color: var(--maic-editing-ui-active-fg, #044192);
   outline: none;
 }
 
@@ -464,14 +464,14 @@ export const EDITING_UI_STYLES = `
 }
 
 .maic-editing-ui-icon-button[aria-pressed='true'] {
-  background: var(--maic-editing-ui-active-bg, #ede9fe);
-  color: var(--maic-editing-ui-active-fg, #6d28d9);
+  background: var(--maic-editing-ui-active-bg, #eaf2fb);
+  color: var(--maic-editing-ui-active-fg, #044192);
 }
 
 .maic-editing-ui-icon-button:focus-visible,
 .maic-editing-ui-select:focus-visible,
 .maic-editing-ui-font-size-input:focus-visible {
-  outline: 2px solid var(--maic-editing-ui-active-fg, #6d28d9);
+  outline: 2px solid var(--maic-editing-ui-active-fg, #044192);
   outline-offset: 1px;
 }
 
@@ -707,7 +707,7 @@ export const EDITING_UI_STYLES = `
 
 .maic-editing-ui-color-swatch:focus-visible,
 .maic-editing-ui-color-eyedropper:focus-visible {
-  outline: 2px solid var(--maic-editing-ui-active-fg, #6d28d9);
+  outline: 2px solid var(--maic-editing-ui-active-fg, #044192);
   outline-offset: 1px;
 }
 
@@ -769,8 +769,8 @@ export const EDITING_UI_STYLES = `
 }
 
 .maic-editing-ui-latex-source:focus {
-  border-color: var(--maic-editing-ui-active-fg, #6d28d9);
-  outline: 2px solid color-mix(in srgb, var(--maic-editing-ui-active-fg, #6d28d9) 20%, transparent);
+  border-color: var(--maic-editing-ui-active-fg, #044192);
+  outline: 2px solid color-mix(in srgb, var(--maic-editing-ui-active-fg, #044192) 20%, transparent);
   outline-offset: 1px;
 }
 
@@ -839,8 +839,8 @@ export const EDITING_UI_STYLES = `
 
 .maic-editing-ui-latex-tabs button[aria-selected='true'],
 .maic-editing-ui-latex-symbol-groups button[aria-selected='true'] {
-  background: #ede9fe;
-  color: #6d28d9;
+  background: #eaf2fb;
+  color: #044192;
 }
 
 .maic-editing-ui-latex-symbol-grid {
@@ -913,8 +913,8 @@ export const EDITING_UI_STYLES = `
 }
 
 .maic-editing-ui-latex-confirm {
-  background: var(--maic-editing-ui-active-fg, #6d28d9);
-  border: 1px solid var(--maic-editing-ui-active-fg, #6d28d9);
+  background: var(--maic-editing-ui-active-fg, #044192);
+  border: 1px solid var(--maic-editing-ui-active-fg, #044192);
   color: #ffffff;
 }
 
@@ -994,15 +994,15 @@ export const EDITING_UI_STYLES = `
 
 .maic-editing-ui-video-dropzone:hover,
 .maic-editing-ui-video-dropzone:focus-visible {
-  border-color: var(--maic-editing-ui-active-fg, #6d28d9);
-  color: var(--maic-editing-ui-active-fg, #6d28d9);
+  border-color: var(--maic-editing-ui-active-fg, #044192);
+  color: var(--maic-editing-ui-active-fg, #044192);
   outline: none;
 }
 
 .maic-editing-ui-audio-dropzone:hover,
 .maic-editing-ui-audio-dropzone:focus-visible {
-  border-color: var(--maic-editing-ui-active-fg, #6d28d9);
-  color: var(--maic-editing-ui-active-fg, #6d28d9);
+  border-color: var(--maic-editing-ui-active-fg, #044192);
+  color: var(--maic-editing-ui-active-fg, #044192);
   outline: none;
 }
 
@@ -1049,8 +1049,8 @@ export const EDITING_UI_STYLES = `
 }
 
 .maic-editing-ui-video-url-row button {
-  background: var(--maic-editing-ui-active-fg, #6d28d9);
-  border: 1px solid var(--maic-editing-ui-active-fg, #6d28d9);
+  background: var(--maic-editing-ui-active-fg, #044192);
+  border: 1px solid var(--maic-editing-ui-active-fg, #044192);
   border-radius: 4px;
   color: #ffffff;
   cursor: pointer;
@@ -1061,8 +1061,8 @@ export const EDITING_UI_STYLES = `
 }
 
 .maic-editing-ui-audio-url-row button {
-  background: var(--maic-editing-ui-active-fg, #6d28d9);
-  border: 1px solid var(--maic-editing-ui-active-fg, #6d28d9);
+  background: var(--maic-editing-ui-active-fg, #044192);
+  border: 1px solid var(--maic-editing-ui-active-fg, #044192);
   border-radius: 4px;
   color: #ffffff;
   cursor: pointer;

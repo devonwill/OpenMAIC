@@ -1,3 +1,11 @@
+/**
+ * 本文件：回放态的整页画布（DOM 渲染版）与回放入口。
+ * 职责：按视口尺寸定位幻灯片，分层渲染背景、元素、高亮/聚光/
+ *       激光笔特效，并按 zoomTarget 做整体缩放。
+ * 关键点：内容层按 canvasScale 缩放、特效层用百分比坐标置于
+ *       缩放层之外，二者口径不同；PlaybackScreenCanvas 按
+ *       feature flag 决定用 DOM 版还是 Renderer 版画布。
+ */
 'use client';
 
 import { ScreenElement } from './ScreenElement';
@@ -18,6 +26,9 @@ import { useRef, useMemo } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { isPlaybackRendererEnabled } from '@/lib/config/feature-flags';
 
+/**
+ * DOM 版回放映画布：供 PlaybackScreenCanvas 在关闭渲染器特性时使用。
+ */
 export function ScreenCanvas() {
   useSyncCanvasViewportFromSlide();
   const canvasScale = useCanvasStore.use.canvasScale();
@@ -126,6 +137,10 @@ export function ScreenCanvas() {
   );
 }
 
+/**
+ * 回放入口：开启 playback renderer 特性时用独立渲染画布，
+ * 否则回退到 DOM 版 ScreenCanvas。
+ */
 export function PlaybackScreenCanvas() {
   return isPlaybackRendererEnabled() ? <RendererScreenCanvas /> : <ScreenCanvas />;
 }

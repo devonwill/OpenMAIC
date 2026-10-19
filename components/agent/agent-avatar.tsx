@@ -1,4 +1,10 @@
 /**
+ * 本文件：智能体头像组件。
+ * 职责：在对话消息中展示智能体的头像与名称，支持 URL 图片、emoji 或首字母回退。
+ * 关键点：avatar 字符串以 http / / 、data: 开头才当图片，否则渲染为字符。
+ */
+
+/**
  * Agent Avatar Component
  * Displays agent avatar and name in chat messages
  */
@@ -12,11 +18,12 @@ interface AgentAvatarProps {
   size?: 'sm' | 'md' | 'lg';
 }
 
-// Check if string is a URL
+// 头像来源判定：图片 URL / 本地路径 / data URI 走 AvatarImage，其余当字符展示。
 function isUrl(str: string): boolean {
   return str.startsWith('http') || str.startsWith('/') || str.startsWith('data:');
 }
 
+// 主组件：头像与名称横排，边框和文字用智能体主题色。
 export default function AgentAvatar({ avatar, color, name, size = 'md' }: AgentAvatarProps) {
   const sizeClasses = {
     sm: 'size-6',

@@ -314,7 +314,7 @@ export function AgentRevealModal({ agents, open, onClose, onAllRevealed }: Agent
                       <div
                         className="absolute inset-0 rounded-2xl p-[2px]"
                         style={{
-                          background: 'linear-gradient(160deg, #6366f1, #a855f7, #6366f1)',
+                          background: 'linear-gradient(160deg, #6366f1, #93c5fd, #6366f1)',
                         }}
                       >
                         <div
@@ -352,8 +352,8 @@ export function AgentRevealModal({ agents, open, onClose, onAllRevealed }: Agent
                             <path d="M10 0 L20 10 L10 20 L0 10 Z" fill="currentColor" />
                           </svg>
                           {/* Center icon */}
-                          <Sparkles className="size-9 text-purple-300/70" />
-                          <span className="mt-1.5 text-xl font-bold text-purple-200/60">?</span>
+                          <Sparkles className="size-9 text-blue-300/70" />
+                          <span className="mt-1.5 text-xl font-bold text-blue-200/60">?</span>
                         </div>
                       </div>
                     </div>

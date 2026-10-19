@@ -1,3 +1,10 @@
+/**
+ * 本文件：幻灯片媒体引用的解析（resolve）逻辑与 Hook。
+ * 职责：把元素/背景上的媒体引用（ref）解析为可渲染 URL，
+ *       并汇总媒体生成任务、资产租约与生成权限的综合状态。
+ * 关键点：解析结果按引用相等性做记忆化，仅在媒体状态真正变化时
+ *       生成新对象，避免渲染期无谓的重渲染。
+ */
 'use client';
 
 import { useMemo } from 'react';
@@ -49,6 +56,10 @@ function leaseFor(
   );
 }
 
+/**
+ * 解析整页幻灯片的媒体状态：逐个元素与背景把 ref 解析为 MediaResolution。
+ * 只在确有变化时复制元素/幻灯片对象，未变化时返回原引用以保持渲染稳定。
+ */
 export function resolveSlideMediaState(
   slide: Slide,
   stageId: string | undefined,
@@ -148,6 +159,7 @@ export function resolveSlideMediaState(
   };
 }
 
+/** 便捷封装：只返回解析后 src 已替换的幻灯片，不暴露中间状态。 */
 export function resolveSlideMedia(
   slide: Slide,
   stageId: string | undefined,
@@ -200,6 +212,10 @@ export function poolLeasableSlideRefs(
   return values;
 }
 
+/**
+ * 页面级媒体解析 Hook：组合生成任务、资产租约、开关与生成权限。
+ * 用拼接签名（signature）作为依赖，任务状态变化时才重新解析。
+ */
 export function useResolvedSlideMedia(slide: Slide): ResolvedSlideMedia {
   const stageId = useMediaStageId();
   const imageGenerationDisabled = useSettingsStore((state) => !state.imageGenerationEnabled);
@@ -272,6 +288,7 @@ export function useResolvedSlideMedia(slide: Slide): ResolvedSlideMedia {
   ]);
 }
 
+/** 便捷 Hook：只取解析后的幻灯片对象。 */
 export function useResolvedSlide(slide: Slide): Slide {
   return useResolvedSlideMedia(slide).slide;
 }

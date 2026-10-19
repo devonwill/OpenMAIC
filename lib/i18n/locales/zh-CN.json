@@ -33,6 +33,35 @@
     "errorServer": "服务暂不可用，请稍后重试",
     "errorNetwork": "网络异常，请检查网络连接"
   },
+  "userMenu": {
+    "profile": "个人信息",
+    "modelSettings": "大模型配置",
+    "logout": "登出"
+  },
+  "profileDialog": {
+    "title": "个人信息",
+    "tabProfile": "基本信息",
+    "tabPassword": "修改密码",
+    "uploadAvatar": "上传/拍照",
+    "resetAvatar": "恢复默认",
+    "avatarHint": "支持本地图或拍照，≤ 200KB；也可从下方卡通头像中直接选择",
+    "avatarTypeError": "仅支持图片文件",
+    "avatarSizeError": "图片大小不能超过 200KB",
+    "avatarReadError": "读取图片失败",
+    "presetAvatars": "卡通头像",
+    "displayNameError": "姓名长度需在 1 到 {{max}} 字符之间",
+    "currentPassword": "当前密码",
+    "newPassword": "新密码",
+    "confirmNewPassword": "确认新密码",
+    "showPassword": "显示密码",
+    "hidePassword": "隐藏密码",
+    "updatePassword": "更新密码",
+    "passwordLengthError": "密码长度需在 {{min}} 到 {{max}} 字符之间",
+    "passwordSameError": "新密码不能与当前密码相同",
+    "passwordSuccess": "密码已更新",
+    "saveSuccess": "保存成功",
+    "saveFailed": "保存失败，请稍后重试"
+  },
   "common": {
     "you": "你",
     "confirm": "确定",
@@ -41,11 +70,15 @@
     "errorPrefix": "错误：",
     "loadingClassroom": "正在加载课堂...",
     "retry": "重试",
-    "close": "关闭"
+    "close": "关闭",
+    "save": "保存"
   },
   "home": {
     "slogan": "Generative Learning in Multi-Agent Interactive Classroom",
-    "greetingWithName": "嗨，{{name}}"
+    "greetingWithName": "嗨，{{name}}",
+    "setupLLMFirst": "请先在系统设置里配置大模型，再使用{{feature}}",
+    "workbenchEntry": "工作台",
+    "enterClassroom": "课堂生成"
   },
   "toolbar": {
     "pdfParser": "解析器",
@@ -563,6 +596,8 @@
       "title": "讲解脚本",
       "regenAllTts": "重新生成全部配音",
       "voiceAll": "全部配音",
+      "cloneVoiceSelect": "选择克隆音色，点「全部配音」按该音色重新配音",
+      "cloneVoiceDefault": "默认音色",
       "counts": "{{speech}} 讲解 · {{cue}} 动作",
       "panLeft": "左移视口",
       "panRight": "右移视口",
@@ -1053,7 +1088,7 @@
     "pdfSizeLimit": "支持最大50MB的PDF文件",
     "courseMaterialSizeLimit": "支持文档、演示、表格、图像、纯文本，最大 50MB（具体支持格式随所选解析器而定）",
     "generateFailed": "生成课堂失败，请重试",
-    "requirementPlaceholder": "输入你想学的任何内容，例如：\n「从零学 Python，30 分钟写出第一个程序」\n「用白板给我讲解傅里叶变换」\n「阿瓦隆桌游怎么玩」",
+    "requirementPlaceholder": "输入你想学的任何内容，例如：\n「从零学机器人学，30 分钟推导机械臂正运动学」\n「用白板给我讲解具身智能与 VLA 大模型」\n「四足机器人的步态控制怎么实现」",
     "requirementRequired": "请输入课程需求",
     "fileTooLarge": "文件过大，请选择小于 50MB 的文件",
     "courseMaterialCountLimit": "最多可上传 5 个课程材料文件",
@@ -1167,6 +1202,12 @@
     "webSearching": "网络搜索",
     "webSearchingDesc": "正在搜索网络获取最新资料",
     "webSearchFailed": "网络搜索失败",
+    "citationsTitle": "本页引用",
+    "citationsValid": "已验证 {{count}} 条",
+    "citationsInvalid": "无效 {{count}} 条",
+    "citationReasonNotFound": "知识库中不存在（可能为模型编造）",
+    "citationReasonNotReviewed": "来源库未通过审核",
+    "citationReasonOutOfScope": "不在勾选的知识库范围内",
     "outlinesReadyCount": "{{ready}} / {{total}} 章节就绪",
     "jumpToBlankTitle": "跳到待补充标题的章节",
     "analyzingMediaMaterial": "解析音视频内容"
@@ -1905,7 +1946,7 @@
       "download": "下载",
       "detailFailed": "技能详情加载失败",
       "contentLabel": "正文",
-      "builtinDetailNote": "该技能随 OpenMAIC 提供。下载后可导入其他智能体工作台。",
+      "builtinDetailNote": "该技能随 OpenRobotics 提供。下载后可导入其他智能体工作台。",
       "upload": "上传",
       "uploading": "正在上传…",
       "uploadFailed": "技能上传失败。请检查文件后重试。",
@@ -2062,7 +2103,26 @@
     "badgeEnter": "专业模式",
     "badgeExit": "返回普通模式",
     "launchPlaceholder": "描述你想创造的学习体验",
-    "launchSend": "开始构建"
+    "launchSend": "开始构建",
+    "config": "快捷设置",
+    "configModel": "模型",
+    "configModelScope": "作用于场景生成、对话会话与测验；工作台回复模型由服务端固定。",
+    "configNoModelProvider": "暂无已配置的模型提供方，请先在“设置”中添加。",
+    "configVoice": "声音",
+    "knowledge": "知识库",
+    "knowledgeLoading": "加载中…",
+    "knowledgeLoadFailed": "加载失败，请先在知识页启用数据。",
+    "knowledgeEmpty": "暂无已审核的知识库，可在知识页上传并审核。",
+    "knowledgeKindCode": "代码",
+    "knowledgeKindGraph": "图谱",
+    "knowledgeKindPaper": "论文",
+    "knowledgeQuota": "引用配额（证据占比）",
+    "knowledgeQuotaSummary": "本地 {{local}}% · 联网 {{web}}% · 模型 {{model}}%",
+    "knowledgeQuotaLocal": "本地",
+    "knowledgeQuotaWeb": "联网",
+    "configCloneUse": "所有 AI 教师统一使用我的克隆声音",
+    "configCloneSelect": "选择克隆声音",
+    "configCloneEmpty": "尚未注册克隆声音，请先在语音设置中注册"
   },
   "workbench": {
     "tool": {

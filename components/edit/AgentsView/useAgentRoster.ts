@@ -1,3 +1,10 @@
+/**
+ * 本文件：班级名单（roster）编辑的 Hook。
+ * 职责：挂载时把舞台文档中的名单物化为本地历史（含撤销/重做栈），
+ * 增删改排序先落到本地历史，再经 setStageAgents 提交回舞台与智能体注册表。
+ * 关键点：仅在真实用户编辑后（isDirtyRef）才提交，避免初始物化触发写回；
+ * 依赖只挂 present，防止 setStageAgents 替换 stage 造成死循环。
+ */
 'use client';
 
 /**
@@ -86,6 +93,7 @@ export interface AgentRosterController {
 // Hook
 // ---------------------------------------------------------------------------
 
+/** 名单编辑控制器 Hook：暴露名单、选中项、增删改排序与撤销/重做。 */
 export function useAgentRoster(): AgentRosterController {
   const setStageAgents = useStageStore.use.setStageAgents();
 

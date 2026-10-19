@@ -24,6 +24,7 @@
  * path (`onAnswer`).
  */
 import { CircleSlash2 } from 'lucide-react';
+import { memo, useMemo } from 'react';
 import type { ChatNode, PlannedPage } from '@/lib/workbench/session-store';
 import { defaultWorkbenchTranslator, type WorkbenchTranslator } from '@/lib/i18n/workbench';
 import { wbStyles as styles } from './chat-styles';
@@ -210,7 +211,7 @@ function RunBoundary({
   );
 }
 
-function ChatNodeView({
+const ChatNodeView = memo(function ChatNodeView({
   node,
   plan,
   onAnswer,
@@ -220,7 +221,9 @@ function ChatNodeView({
   t,
 }: {
   node: ChatNode;
-  plan: PlannedPage[];
+  /** Only tool rows need the generation plan. Keeping it off prose rows lets
+   * their memoized views survive unrelated plan updates. */
+  plan?: PlannedPage[];
   onAnswer?: ChatAnswerHandler;
   onRevive?: () => void;
   collapsedQuestion?: boolean;
@@ -264,7 +267,7 @@ function ChatNodeView({
         />
       );
     case 'tool':
-      return <ToolGroup nodes={[node]} plan={plan} t={t} />;
+      return <ToolGroup nodes={[node]} plan={plan ?? []} t={t} />;
     case 'course':
       // The tail of one exchange (question → answer): the classrooms it
       // produced or was pointed at, one card each, the rest behind a `+N`. The
@@ -287,7 +290,7 @@ function ChatNodeView({
         </div>
       );
   }
-}
+});
 
 export function ChatTimeline({
   chat,
@@ -321,7 +324,10 @@ export function ChatTimeline({
   takenOverQuestionKey?: string | null;
   t?: WorkbenchTranslator;
 }) {
-  const rows = rowsForRender(chat);
+  // Streaming updates regularly re-render the chat host for scroll and
+  // composer state. Row grouping allocates several intermediate arrays, so
+  // retain it while the immutable transcript reference is unchanged.
+  const rows = useMemo(() => rowsForRender(chat), [chat]);
   return (
     <div className={styles.timeline.root}>
       {rows.map((row) =>
@@ -331,7 +337,7 @@ export function ChatTimeline({
           <ChatNodeView
             key={row.key}
             node={row.node!}
-            plan={plan}
+            plan={row.node!.kind === 'tool' ? plan : undefined}
             repeat={row.repeat}
             t={t}
             onAnswer={onAnswer}

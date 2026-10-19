@@ -107,7 +107,7 @@ window.addEventListener('message', function(event) {
       // Highlight the target element with a pulsing border
       const highlightEl = document.querySelector(target);
       if (highlightEl) {
-        highlightEl.style.outline = '3px solid rgba(139, 92, 246, 0.8)';
+        highlightEl.style.outline = '3px solid rgba(4, 65, 146, 0.8)';
         highlightEl.style.outlineOffset = '4px';
         highlightEl.style.animation = 'pulse-highlight 2s infinite';
         setTimeout(() => {
@@ -124,7 +124,7 @@ window.addEventListener('message', function(event) {
         const rect = annotateEl.getBoundingClientRect();
         const tooltip = document.createElement('div');
         tooltip.className = 'teacher-annotation';
-        tooltip.style.cssText = 'position:fixed; top:' + (rect.top - 40) + 'px; left:' + rect.left + 'px; background:rgba(139,92,246,0.95); color:white; padding:8px 12px; border-radius:8px; font-size:14px; z-index:1000; animation:fadeIn 0.3s;';
+        tooltip.style.cssText = 'position:fixed; top:' + (rect.top - 40) + 'px; left:' + rect.left + 'px; background:rgba(4, 65, 146,0.95); color:white; padding:8px 12px; border-radius:8px; font-size:14px; z-index:1000; animation:fadeIn 0.3s;';
         tooltip.textContent = content;
         document.body.appendChild(tooltip);
         setTimeout(() => tooltip.remove(), 4000);
@@ -144,7 +144,7 @@ window.addEventListener('message', function(event) {
 
 // Add this CSS for animations
 const style = document.createElement('style');
-style.textContent = '@keyframes pulse-highlight { 0%, 100% { outline-color: rgba(139, 92, 246, 0.8); } 50% { outline-color: rgba(139, 92, 246, 0.4); } } @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }';
+style.textContent = '@keyframes pulse-highlight { 0%, 100% { outline-color: rgba(4, 65, 146, 0.8); } 50% { outline-color: rgba(4, 65, 146, 0.4); } } @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }';
 document.head.appendChild(style);
 ```
 

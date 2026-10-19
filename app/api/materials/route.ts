@@ -52,6 +52,7 @@ import {
 import {
   abandonOwnerMaterial,
   finalizeOwnerMaterial,
+  listOwnerMaterials,
   MaterialQuotaExceededError,
   publicMaterial,
   reclaimStaleOwnerMaterialUploads,
@@ -121,6 +122,33 @@ export async function GET(req: NextRequest) {
   if (!isAgentRuntimeConfigured()) return new Response('Not found', { status: 404 });
 
   const url = new URL(req.url);
+
+  // owner 库列表（?scope=owner）不依赖 sessionId：分支必须插在 sessionId
+  // 400 之前，否则素材库面板的无 sessionId 请求会被误判 400。
+  if (url.searchParams.get('scope') === 'owner') {
+    const parsedOwnerLimit = parseLimit(url.searchParams.get('limit'));
+    if ('invalid' in parsedOwnerLimit) {
+      return apiError(
+        'INVALID_REQUEST',
+        400,
+        `limit must be an integer between 1 and ${MAX_MATERIAL_LIST_LIMIT}`,
+      );
+    }
+    return withRequestOwnerId(req, async (ownerId, responseHeaders) => {
+      if (!ownerId) return ownerNotFound(responseHeaders);
+      const provider = await getServerPersistenceProvider(process.env.DATABASE_URL ?? '');
+      const rows = await listOwnerMaterials(
+        provider.pool as unknown as ConnectableQueryable,
+        ownerId,
+      );
+      // listOwnerMaterials 签名不带 limit（全量取回后截断），与 session 列表的
+      // limit 语义保持一致；未传 limit 时返回全部（同 session 路径的默认行为）。
+      const materials =
+        parsedOwnerLimit.limit === undefined ? rows : rows.slice(0, parsedOwnerLimit.limit);
+      return ownerJson({ materials: materials.map(publicMaterial) }, 200, responseHeaders);
+    });
+  }
+
   const sessionId = url.searchParams.get('sessionId')?.trim();
   if (!sessionId) return apiError('MISSING_REQUIRED_FIELD', 400, 'sessionId is required');
 

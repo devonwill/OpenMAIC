@@ -12,6 +12,7 @@ function makeActions(): TokenPlanActions {
     setImageProviderConfig: vi.fn(),
     setVideoProviderConfig: vi.fn(),
     setTTSProviderConfig: vi.fn(),
+    setASRProviderConfig: vi.fn(),
     setWebSearchProviderConfig: vi.fn(),
   };
 }
@@ -138,6 +139,7 @@ describe('applyTokenPlan', () => {
     expect(actions.setImageProviderConfig).not.toHaveBeenCalled();
     expect(actions.setVideoProviderConfig).not.toHaveBeenCalled();
     expect(actions.setTTSProviderConfig).not.toHaveBeenCalled();
+    expect(actions.setASRProviderConfig).not.toHaveBeenCalled();
     expect(actions.setWebSearchProviderConfig).not.toHaveBeenCalled();
 
     expect(results).toHaveLength(1);
@@ -241,6 +243,32 @@ describe('applyTokenPlan', () => {
     expect(config.models[0].capabilities?.thinking).toBeDefined();
   });
 
+  it('fills the ASR modality for a plan that declares it (Xiaomi MiMo)', () => {
+    const xiaomi = TOKEN_PLAN_PRESETS.find((p) => p.id === 'xiaomi')!;
+    const actions = makeActions();
+    const results = applyTokenPlan(xiaomi, 'tp-test', actions);
+
+    expect(actions.setASRProviderConfig).toHaveBeenCalledWith(
+      'xiaomi-asr',
+      expect.objectContaining({
+        apiKey: 'tp-test',
+        baseUrl: 'https://token-plan-cn.xiaomimimo.com/v1',
+        enabled: true,
+        modelId: 'mimo-v2.5-asr',
+      }),
+    );
+    // The plan declares no image/video/search, so those stay untouched.
+    expect(actions.setImageProviderConfig).not.toHaveBeenCalled();
+    expect(actions.setVideoProviderConfig).not.toHaveBeenCalled();
+    expect(actions.setWebSearchProviderConfig).not.toHaveBeenCalled();
+
+    expect(results.map((r) => [r.modality, r.status])).toEqual([
+      ['llm', 'lit'],
+      ['tts', 'lit'],
+      ['asr', 'lit'],
+    ]);
+  });
+
   it('isolates a failing modality without aborting the rest', () => {
     const actions = makeActions();
     (actions.setImageProviderConfig as ReturnType<typeof vi.fn>).mockImplementation(() => {
@@ -298,6 +326,21 @@ describe('removeTokenPlan', () => {
     );
     expect(actions.setWebSearchProviderConfig).toHaveBeenCalledWith(
       'minimax',
+      expect.objectContaining({ apiKey: '', baseUrl: '', enabled: false }),
+    );
+  });
+
+  it('clears the ASR modality on removal (Xiaomi MiMo)', () => {
+    const xiaomi = TOKEN_PLAN_PRESETS.find((p) => p.id === 'xiaomi')!;
+    const actions = makeActions();
+    removeTokenPlan(xiaomi, actions);
+
+    expect(actions.setASRProviderConfig).toHaveBeenCalledWith(
+      'xiaomi-asr',
+      expect.objectContaining({ apiKey: '', baseUrl: '', enabled: false }),
+    );
+    expect(actions.setTTSProviderConfig).toHaveBeenCalledWith(
+      'xiaomi-tts',
       expect.objectContaining({ apiKey: '', baseUrl: '', enabled: false }),
     );
   });

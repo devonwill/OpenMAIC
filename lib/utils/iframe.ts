@@ -187,11 +187,11 @@ const ELEMENT_PICKER_SHIM = `<script data-iframe-element-picker-shim>
     root.setAttribute('data-maic-element-picker-overlay', '');
     root.style.cssText = 'position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;z-index:2147483647;';
     hoverBox = document.createElement('div');
-    hoverBox.style.cssText = 'display:none;position:absolute;border:2px solid #7c3aed;background:rgba(124,58,237,.10);box-sizing:border-box;border-radius:3px;pointer-events:none;';
+    hoverBox.style.cssText = 'display:none;position:absolute;border:2px solid #1d4ed8;background:rgba(29,78,216,.10);box-sizing:border-box;border-radius:3px;pointer-events:none;';
     root.appendChild(hoverBox);
     selectedBox = document.createElement('div');
     selectedBox.setAttribute('data-maic-picker-selected', '');
-    selectedBox.style.cssText = 'display:none;position:absolute;border:3px solid #7c3aed;background:rgba(124,58,237,.10);box-sizing:border-box;border-radius:4px;box-shadow:0 0 0 1px rgba(255,255,255,.9);pointer-events:none;';
+    selectedBox.style.cssText = 'display:none;position:absolute;border:3px solid #1d4ed8;background:rgba(29,78,216,.10);box-sizing:border-box;border-radius:4px;box-shadow:0 0 0 1px rgba(255,255,255,.9);pointer-events:none;';
     root.appendChild(selectedBox);
     (document.body || document.documentElement).appendChild(root);
   }
@@ -254,7 +254,7 @@ const ELEMENT_PICKER_SHIM = `<script data-iframe-element-picker-shim>
       var badge = document.createElement('div');
       badge.setAttribute('data-maic-picker-pin', '');
       badge.textContent = String(index + 1);
-      badge.style.cssText = 'position:absolute;display:grid;place-items:center;width:20px;height:20px;border-radius:999px;background:#7c3aed;color:white;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,.35);font:700 11px/1 system-ui,sans-serif;box-sizing:border-box;pointer-events:none;';
+      badge.style.cssText = 'position:absolute;display:grid;place-items:center;width:20px;height:20px;border-radius:999px;background:#1d4ed8;color:white;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,.35);font:700 11px/1 system-ui,sans-serif;box-sizing:border-box;pointer-events:none;';
       var rect = element.getBoundingClientRect();
       badge.style.left = Math.max(0, rect.left + window.scrollX - 8) + 'px';
       badge.style.top = Math.max(0, rect.top + window.scrollY - 8) + 'px';

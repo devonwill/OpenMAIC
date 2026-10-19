@@ -1,3 +1,11 @@
+/**
+ * 本文件：可拖拽、可折叠的常驻插入工具条。
+ * 职责：浮动在工作区画布上承载文本框/图片/形状等插入项，与顶栏的舞台级
+ * 控件分离；支持鼠标拖拽与键盘方向键移动、折叠成握把。
+ * 关键点：约束范围是整个工作区框架（经 CanvasOverlayPortal 测量）而非幻灯片
+ * 卡片，否则无法停靠在卡片外侧灰边；元素拾取期间提升 z 序并禁用指针事件，
+ * 点击穿透给下层拾取器。
+ */
 'use client';
 
 import {
@@ -62,6 +70,8 @@ interface Props {
  * so a click in its area falls through to the picker below and still means "pick
  * this element". Nothing in the strip is clickable until the pick ends; the
  * canvas underneath it is.
+ *
+ * 中文要点：items 为空不渲染；折叠态只剩握把行，展开/折叠后重新夹紧边界。
  */
 export function FloatingInsertToolbar({ items, x, y, collapsed, onToggleCollapsed }: Props) {
   const { t } = useI18n();
@@ -77,6 +87,9 @@ export function FloatingInsertToolbar({ items, x, y, collapsed, onToggleCollapse
    * boundary. Motion enforces `dragConstraints` during a gesture only, so both
    * of the non-gesture paths — the keyboard move and the re-clamp after the
    * fold changes the strip's height — come through here and share one rule.
+   *
+   * 中文要点：把位移夹紧到边界内再累加到 MotionValue——手势外的两条路径
+   * （键盘移动、折叠后重夹紧）复用同一规则。
    */
   const moveWithinBounds = (dx: number, dy: number) => {
     const bounds = constraintsRef.current?.getBoundingClientRect();
@@ -164,7 +177,7 @@ export function FloatingInsertToolbar({ items, x, y, collapsed, onToggleCollapse
               }}
               onKeyDown={handleDragKeyDown}
               onBlur={() => setKeyboardDragging(false)}
-              className="flex h-6 flex-1 touch-none cursor-grab items-center justify-center rounded-md text-zinc-300 hover:bg-zinc-100 hover:text-zinc-500 focus-visible:outline-2 focus-visible:outline-violet-500 active:cursor-grabbing dark:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-400"
+              className="flex h-6 flex-1 touch-none cursor-grab items-center justify-center rounded-md text-zinc-300 hover:bg-zinc-100 hover:text-zinc-500 focus-visible:outline-2 focus-visible:outline-blue-500 active:cursor-grabbing dark:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-400"
             >
               <GripHorizontal className="h-3 w-3" strokeWidth={2} />
             </button>
@@ -177,7 +190,7 @@ export function FloatingInsertToolbar({ items, x, y, collapsed, onToggleCollapse
                 collapsed ? t('edit.insert.expandToolbar') : t('edit.insert.collapseToolbar')
               }
               title={collapsed ? t('edit.insert.expandToolbar') : t('edit.insert.collapseToolbar')}
-              className="grid h-6 w-4 shrink-0 place-items-center rounded-md text-zinc-300 transition-colors hover:bg-zinc-100 hover:text-zinc-500 focus-visible:outline-2 focus-visible:outline-violet-500 dark:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-400"
+              className="grid h-6 w-4 shrink-0 place-items-center rounded-md text-zinc-300 transition-colors hover:bg-zinc-100 hover:text-zinc-500 focus-visible:outline-2 focus-visible:outline-blue-500 dark:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-400"
             >
               <ChevronDown
                 className={cn('h-3 w-3 transition-transform', !collapsed && 'rotate-180')}

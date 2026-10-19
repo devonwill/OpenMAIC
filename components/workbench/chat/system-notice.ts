@@ -1,4 +1,11 @@
 /**
+ * 本文件：系统通知的呈现逻辑（纯函数）。
+ * 职责：把生命周期标记渲染为「摘要 + 可选提示 + 可选技术细节」，
+ * 并把相邻的同事实通知折叠为带计数的一行。
+ * 关键点：技术细节永不拼进句子（原始报错是开发者语言）；折叠仅发生在
+ * 渲染层，fold 仍保留每条标记，回放与实时呈现完全一致。
+ */
+/**
  * System notice presentation — the one place that decides how a lifecycle
  * marker READS, and the one place that knows two adjacent markers can be the
  * same fact reported twice.
@@ -25,8 +32,10 @@ import { defaultWorkbenchTranslator, type WorkbenchTranslator } from '@/lib/i18n
  * the centered caption register, not as a left-aligned notice row, but it is
  * the same vocabulary of copy + icon + count, so it presents through here too.
  */
+/** 通知语调：含 stopped（居中字幕位的取消边界，呈现走同一套词汇）。 */
 export type NoticeTone = SystemTone | 'stopped';
 
+/** 一条通知的数据形状：summary 必填，detail 只进展开区。 */
 export interface SystemNotice {
   tone: NoticeTone;
   /** One statement of what happened. Never carries the technical cause. */
@@ -38,6 +47,7 @@ export interface SystemNotice {
 }
 
 /** Notice-shaped nodes: everything the run says about itself. */
+/** 是否为通知类节点：system（系统消息）与 boundary（轮次边界）。 */
 export function isNoticeNode(node: ChatNode): boolean {
   return node.kind === 'system' || node.kind === 'boundary';
 }
@@ -59,6 +69,7 @@ const oneLine = (value: string): string =>
  */
 const cleanDetail = (value: string): string => value.trim().replace(/[\s:：]+$/u, '');
 
+/** 把节点转成可呈现的通知：翻译 copyKey、归一单行、清理细节尾部悬挂分隔符。 */
 export function presentSystemNotice(
   node: ChatNode,
   t: WorkbenchTranslator = defaultWorkbenchTranslator,
@@ -84,6 +95,7 @@ export function presentSystemNotice(
  * match — a second failure with a DIFFERENT cause is new information and keeps
  * its own row, however similar the summary looks.
  */
+/** 两标记是否同一事实：所有可展示字段都必须一致，细节不同则各自成行。 */
 export function isSameNotice(a: ChatNode, b: ChatNode): boolean {
   if (!isNoticeNode(a) || !isNoticeNode(b)) return false;
   return (
@@ -95,6 +107,7 @@ export function isSameNotice(a: ChatNode, b: ChatNode): boolean {
   );
 }
 
+/** 折叠后的重复计数徽标（×N）及其完整读法 title。 */
 /** The count badge. `×5` is the recognised idiom; the title spells it out. */
 export function repeatLabel(repeat: number): string {
   return `×${repeat}`;

@@ -8,6 +8,7 @@
 import { db } from '@/lib/utils/database';
 import { useSettingsStore } from '@/lib/store/settings';
 import { generateAndStoreTTS } from '@/lib/hooks/use-scene-generator';
+import type { ResolvedVoice } from '@/lib/audio/voice-resolver';
 import { useStageStore } from '@/lib/store/stage';
 import { proveExclusiveAssetOwnership } from '@/lib/media/collect-stage-asset-refs';
 import { resolveAudioBlob } from '@/lib/media/resolve-audio-bytes';
@@ -127,6 +128,10 @@ export async function regenerateSpeechAudio(
   action: { id?: string; text?: string; audioId?: string },
   language?: string,
   signal?: AbortSignal,
+  // 时间线「克隆音色」选择器选定的显式音色：传入后本句按该音色重新配音，
+  // 绕过 narrator binding / 全局克隆覆盖（generateAndStoreTTS 内该参数优先级最高）。
+  // 不传则维持原有音色解析，行为与改造前一致。
+  overrideVoice?: ResolvedVoice,
 ): Promise<string | null> {
   if (!isManagedTtsActive()) return null;
   const text = action.text?.trim();
@@ -146,5 +151,6 @@ export async function regenerateSpeechAudio(
     undefined,
     existingAudioId,
     stageId,
+    overrideVoice,
   );
 }

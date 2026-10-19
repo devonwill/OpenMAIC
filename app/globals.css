@@ -12,7 +12,7 @@
 @source "../node_modules/@openmaic/renderer/dist/**/*.{js,cjs}";
 /* slide-renderer-demo is gitignored (local sandbox), which makes Tailwind v4's
    auto source detection skip it. Re-include it explicitly so the demo's
-   Tailwind classes (e.g. bg-violet-600) still get generated. */
+   Tailwind classes (e.g. bg-indigo-600) still get generated. */
 @source "./slide-renderer-demo/**/*.{tsx,ts,jsx,js}";
 
 @custom-variant dark (&:is(.dark *));
@@ -35,6 +35,17 @@
   --color-chart-3: var(--chart-3);
   --color-chart-2: var(--chart-2);
   --color-chart-1: var(--chart-1);
+  /* OpenRobotics 品牌色阶。取自 logo 实测色（蓝 #044192 / 橙 #f18e17），
+     单独成组而不并入 primary：primary 承担「可点击」语义，brand 承担
+     「品牌识别」语义，二者混用会让按钮和 logo 在换肤时互相牵制。 */
+  --color-brand: var(--brand);
+  --color-brand-deep: var(--brand-deep);
+  --color-brand-mid: var(--brand-mid);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-tint: var(--brand-tint);
+  --color-accent-orange: var(--accent-orange);
+  --color-accent-orange-deep: var(--accent-orange-deep);
+  --color-accent-orange-soft: var(--accent-orange-soft);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -67,71 +78,96 @@
      fallback fonts. */
   --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
   --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --foreground: oklch(0.208 0.04 265.75);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.208 0.04 265.75);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: #722ed1;
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.208 0.04 265.75);
+  --primary: oklch(0.394 0.145 258.6);
+  --primary-foreground: oklch(1 0 0);
+  /* 中性色统一带一点冷蓝倾向（hue≈256-266）而非纯灰：纯灰与品牌蓝并置时
+     显得发脏，微弱蓝调让界面整体落在同一色温上。 */
+  --secondary: oklch(0.968 0.007 247.9);
+  --secondary-foreground: oklch(0.208 0.04 265.75);
+  --muted: oklch(0.968 0.007 247.9);
+  --muted-foreground: oklch(0.554 0.041 257.42);
+  --accent: oklch(0.958 0.015 251.16);
+  --accent-foreground: oklch(0.208 0.04 265.75);
   --destructive: oklch(0.58 0.22 27);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.809 0.105 251.813);
-  --chart-2: oklch(0.623 0.214 259.815);
-  --chart-3: oklch(0.546 0.245 262.881);
-  --chart-4: oklch(0.488 0.243 264.376);
-  --chart-5: oklch(0.424 0.199 265.638);
+  --border: oklch(0.929 0.013 255.51);
+  --input: oklch(0.929 0.013 255.51);
+  --ring: oklch(0.641 0.131 251.42);
+  /* 图表色序：蓝 → 靛 → 青 → 橙 → 深橙。橙色放在末位而非首位，
+     让相邻数据系列仍能靠蓝色明度差区分，橙色只负责拉开最大对比。 */
+  --chart-1: oklch(0.641 0.131 251.42);
+  --chart-2: oklch(0.55 0.14 257);
+  --chart-3: oklch(0.62 0.11 232);
+  --chart-4: oklch(0.813 0.118 66.01);
+  --chart-5: oklch(0.736 0.164 62.07);
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: oklch(0.984 0.003 247.86);
+  --sidebar-foreground: oklch(0.208 0.04 265.75);
+  --sidebar-primary: oklch(0.394 0.145 258.6);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.958 0.015 251.16);
+  --sidebar-accent-foreground: oklch(0.208 0.04 265.75);
+  --sidebar-border: oklch(0.929 0.013 255.51);
+  --sidebar-ring: oklch(0.641 0.131 251.42);
+
+  /* ── OpenRobotics 品牌色（取自 logo 实测色）───────────────── */
+  --brand: oklch(0.394 0.145 258.6);
+  --brand-deep: oklch(0.318 0.118 259.5);
+  --brand-mid: oklch(0.449 0.14 255.93);
+  --brand-soft: oklch(0.958 0.015 251.16);
+  --brand-tint: oklch(0.906 0.03 251.5);
+  /* 橙色只作点缀：底色 + 深色文字（对比度 6.4:1），不用作文字色。 */
+  --accent-orange: oklch(0.736 0.164 62.07);
+  --accent-orange-deep: oklch(0.575 0.138 56.39);
+  --accent-orange-soft: oklch(0.94 0.048 78.42);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: #8b47ea;
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.371 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  --background: oklch(0.183 0.031 263.38);
+  --foreground: oklch(0.948 0.019 265.98);
+  --card: oklch(0.229 0.048 263.73);
+  --card-foreground: oklch(0.948 0.019 265.98);
+  --popover: oklch(0.229 0.048 263.73);
+  --popover-foreground: oklch(0.948 0.019 265.98);
+  /* 深色下用亮蓝：#044192 那样的深蓝在深底上几乎不可见。 */
+  --primary: oklch(0.676 0.122 251.68);
+  --primary-foreground: oklch(0.183 0.031 263.38);
+  --secondary: oklch(0.259 0.052 263.09);
+  --secondary-foreground: oklch(0.948 0.019 265.98);
+  --muted: oklch(0.259 0.052 263.09);
+  --muted-foreground: oklch(0.711 0.035 256.79);
+  --accent: oklch(0.312 0.056 263.85);
+  --accent-foreground: oklch(0.948 0.019 265.98);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.809 0.105 251.813);
-  --chart-2: oklch(0.623 0.214 259.815);
-  --chart-3: oklch(0.546 0.245 262.881);
-  --chart-4: oklch(0.488 0.243 264.376);
-  --chart-5: oklch(0.424 0.199 265.638);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 16%);
+  --ring: oklch(0.676 0.122 251.68);
+  --chart-1: oklch(0.676 0.122 251.68);
+  --chart-2: oklch(0.6 0.14 255);
+  --chart-3: oklch(0.7 0.1 232);
+  --chart-4: oklch(0.837 0.104 67.92);
+  --chart-5: oklch(0.779 0.151 64.08);
+  --sidebar: oklch(0.229 0.048 263.73);
+  --sidebar-foreground: oklch(0.948 0.019 265.98);
+  --sidebar-primary: oklch(0.676 0.122 251.68);
+  --sidebar-primary-foreground: oklch(0.183 0.031 263.38);
+  --sidebar-accent: oklch(0.312 0.056 263.85);
+  --sidebar-accent-foreground: oklch(0.948 0.019 265.98);
+  --sidebar-border: oklch(1 0 0 / 12%);
+  --sidebar-ring: oklch(0.676 0.122 251.68);
+
+  --brand: oklch(0.676 0.122 251.68);
+  --brand-deep: oklch(0.52 0.13 254);
+  --brand-mid: oklch(0.748 0.095 250.57);
+  --brand-soft: oklch(0.312 0.056 263.85);
+  --brand-tint: oklch(0.259 0.052 263.09);
+  --accent-orange: oklch(0.779 0.151 64.08);
+  --accent-orange-deep: oklch(0.837 0.104 67.92);
+  --accent-orange-soft: oklch(0.42 0.09 62);
 }
 
 @layer base {

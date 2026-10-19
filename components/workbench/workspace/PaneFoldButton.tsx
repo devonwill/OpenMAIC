@@ -1,3 +1,9 @@
+/**
+ * 本文件：面板折叠按钮。
+ * 职责：在各面板自己的头部行尾渲染一个细雪佛龙按钮，点击折叠/展开该面板。
+ * 关键点：折叠控件从接缝移入面板头部，避免两个面板在同一接缝上
+ * 出现方向相反、无法分辨归属的箭头；导航 rail 同样复用本组件。
+ */
 'use client';
 
 /**
@@ -26,6 +32,7 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 
+// 雪佛龙朝向 = 面板离场方向；expanded 仅在「同一控件管两态」的头部才传。
 export function PaneFoldButton({
   testId,
   label,

@@ -9,6 +9,11 @@ describe('voice-registration provider dispatch', () => {
     expect(getVoiceRegistrationAdapter('voxcpm-tts')).toBeDefined();
   });
 
+  it('resolves an adapter for xiaomi stateless voice cloning', () => {
+    expect(getVoiceRegistrationAdapter('xiaomi-tts')).toBeDefined();
+    expect(supportsVoiceRegistration('xiaomi-tts')).toBe(true);
+  });
+
   it('returns undefined for providers without an adapter', () => {
     expect(getVoiceRegistrationAdapter('openai-tts')).toBeUndefined();
     expect(supportsVoiceRegistration('openai-tts')).toBe(false);

@@ -1,3 +1,12 @@
+/**
+ * 本文件：Pro 编辑模式外壳（EditShell）及其框架、状态同步内部件。
+ * 职责：把 scene.type 解析为已注册 surface（未注册回退 NOOP_SURFACE），
+ * 组装 CommandBar、左侧导航插槽、画布区、浮动插入条/属性条与提示条；
+ * 由 SurfaceStateRunner 把 surface 状态上抛给外壳消费。
+ * 关键点：Frame 恒定挂载、只换内部 SurfaceComponent，切场景时外壳不重挂；
+ * surfaceStateEqual 逐字段浅比较防「每次渲染新对象 → 无限 setState 循环」，
+ * 扩展 SurfaceState 字段时必须同步更新该比较函数。
+ */
 'use client';
 
 import { motion, useMotionValue, useReducedMotion } from 'motion/react';
@@ -82,6 +91,9 @@ const LEFT_RAIL_DELAY = CHROME_STAGGER * 2;
  * inside the center slot swaps. That guarantees CommandBar and `leftRail`
  * never remount during scene navigation, removing the chrome flicker that
  * the previous two-branch design caused (PR3a rearch).
+ *
+ * 中文要点：这是编辑模式的组装根——按场景类型解析 surface，切场景只换
+ * 中央内容，不换外壳；退出 Pro 模式由上方 Header 的全局开关完成。
  */
 export function EditShell({
   scene,
@@ -211,6 +223,9 @@ function SurfaceStateRunner({
  * capturing per-render state must fold its own change signal (a
  * content ref / version counter) into the comparison, otherwise the
  * stale callback fires at click time.
+ *
+ * 中文要点：外壳只关心语义字段是否变化；回调闭包（onInvoke 等）刻意不比较，
+ * 返回非空 floatingActions 的未来 surface 需自带版本信号并入比较。
  */
 function surfaceStateEqual(a: SurfaceState, b: SurfaceState | null): boolean {
   if (!b) return false;

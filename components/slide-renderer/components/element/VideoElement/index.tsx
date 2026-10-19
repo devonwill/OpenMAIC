@@ -1,3 +1,11 @@
+/**
+ * 本文件：幻灯片视频元素的渲染组件（编辑态）。
+ * 职责：按媒体解析状态渲染骨架屏/禁用/失败占位、封面图或视频，
+ *       提供点选、锁定与失败重试入口。
+ * 关键点：编辑态不自动播放（避免干扰编辑）；重试按钮需阻断
+ *       冒泡，防止触发元素点选；状态分支优先级 pending/placeholder
+ *       → disabled → failed → poster → src。
+ */
 'use client';
 
 import type { PPTVideoElement } from '@openmaic/dsl';
@@ -22,6 +30,7 @@ export interface VideoElementProps {
  * Editable video element component.
  * In edit mode, displays the poster/thumbnail with a play icon overlay.
  * Does NOT autoplay to avoid disrupting the editing experience.
+ * 中文：编辑态只显示封面 + 播放图标，不自动播放。
  */
 export function VideoElement({ elementInfo, selectElement }: VideoElementProps) {
   const { t } = useI18n();
@@ -39,6 +48,8 @@ export function VideoElement({ elementInfo, selectElement }: VideoElementProps) 
   // A refusal says why, next to the Retry rather than instead of it -- and only
   // next to one, so a permanent refusal still paints exactly what it painted
   // before this branch. See the note in the image element.
+  // 中文：仅可重试的失败才展示拒绝原因提示，且与重试按钮并排而非替代，
+  //   保持不可重试场景的原有渲染不变。
   const failureNotice = canRetry ? mediaFailureNoticeKey(task?.errorCode) : undefined;
   const retryRef = mediaRef;
 

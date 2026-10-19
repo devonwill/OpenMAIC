@@ -1,3 +1,10 @@
+/**
+ * 本文件：图片元素 src 的媒体解析 Hook 与纯函数。
+ * 职责：把 gen_img_* 占位符或资源池引用解析为可渲染 URL，并给出
+ *       待生成/禁用/失败等 resolution 状态供 UI 分支使用。
+ * 关键点：仅在有 stageId（课堂上下文）时订阅媒体 store，避免首页缩略图
+ *         跨课程串数据；纯函数 resolveImageSrc 便于单测。
+ */
 'use client';
 
 import type { PPTImageElement } from '@openmaic/dsl';
@@ -36,6 +43,9 @@ export interface ResolvedImageSrc {
  * Direct and relative browser addresses pass through. Opaque references are
  * rendered only after the asset lease or task supplies a concrete URL. Tasks
  * are honored only when they belong to the current stage.
+ *
+ * 中文：直接地址（URL/data URI）原样通过；不透明引用必须等资源租约或
+ * 任务给出具体 URL 才渲染；跨 stage 的任务一律忽略。
  */
 export function resolveImageSrc(
   elementInfo: PPTImageElement,

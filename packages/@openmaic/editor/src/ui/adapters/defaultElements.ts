@@ -155,7 +155,8 @@ export function createDefaultAudioElement(id: string, asset: EditorAsset): PPTAu
     height: 48,
     rotate: 0,
     fixedRatio: true,
-    color: '#7c3aed',
+    // 新建音频元素的默认填充色，跟随品牌蓝，方便用户一眼认出「这是刚插入的」。
+    color: '#044192',
     loop: false,
     autoplay: false,
     src: asset.src,

@@ -1,3 +1,9 @@
+/**
+ * 本文件：课件页面翻页控件（上一页/页码/下一页）。
+ * 职责：提供 dock 与 floating 两种形态——dock 形态扁平嵌入编辑坞全局条，
+ * floating 形态以悬浮胶囊贴在无编辑坞的场景底部。
+ * 关键点：页码按 0 基 index 显示为 index+1；count<=0 时不渲染。
+ */
 'use client';
 
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -29,7 +35,12 @@ export interface CanvasPagerProps {
  */
 export type CanvasPagerVariant = 'dock' | 'floating';
 
-/** Scene navigation — in the dock's global edit bar, or floating when there is no dock. */
+/**
+ * Scene navigation — in the dock's global edit bar, or floating when there is no dock.
+ *
+ * 场景翻页器：优先嵌入编辑坞全局条，无编辑坞的场景退化为悬浮条；
+ * count 为 0（空课件）时返回 null。
+ */
 export function CanvasPager({
   index,
   count,

@@ -103,7 +103,11 @@ export function createDefaultSlide(id: string): Slide {
     viewportRatio: 0.5625, // 16:9
     theme: {
       backgroundColor: '#ffffff',
-      themeColors: ['#5b8def', '#8b5cf6', '#10b981', '#f59e0b'],
+      // 图表系列色板（ECharts 按下标循环取色，故相邻项必须能一眼分开）：
+      // 品牌蓝 -> 品牌橙 -> 青绿 -> 深琥珀，相邻色相间隔 >= 60 度且明度拉开，
+      // 在色觉障碍与灰度打印下仍可区分。不要在这里塞入品牌主色本身，
+      // 那会让「品牌蓝」同时变成「第一个数据系列」，读图时产生歧义。
+      themeColors: ['#2563eb', '#f18e17', '#10b981', '#b45309'],
       fontColor: '#111827',
       fontName: 'Inter',
     },
@@ -179,7 +183,7 @@ export function createDefaultChartElement(id: string, chartType: ChartType): PPT
       legends: ['Series 1'],
       series: [[24, 36, 28, 42]],
     },
-    themeColors: ['#5b8def', '#8b5cf6', '#10b981', '#f59e0b'],
+    themeColors: ['#2563eb', '#f18e17', '#10b981', '#b45309'],
     textColor: '#333333',
     lineColor: '#d4d4d8',
   };

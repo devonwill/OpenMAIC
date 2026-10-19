@@ -34,7 +34,7 @@ export function CompletionCtaCard({ onView, className }: Props) {
   return (
     <div
       className={cn(
-        'space-y-3 rounded-2xl border border-cyan-100/[0.13] bg-gradient-to-br from-emerald-300/[0.16] via-primary/[0.16] to-purple-300/[0.14] p-5 shadow-[0_18px_46px_rgba(6,16,34,0.28)]',
+        'space-y-3 rounded-2xl border border-cyan-100/[0.13] bg-gradient-to-br from-emerald-300/[0.16] via-primary/[0.16] to-blue-300/[0.14] p-5 shadow-[0_18px_46px_rgba(6,16,34,0.28)]',
         className,
       )}
     >
@@ -51,7 +51,7 @@ export function CompletionCtaCard({ onView, className }: Props) {
       <button
         type="button"
         onClick={onView}
-        className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-[0_0_28px_rgba(155,124,255,0.26)] transition-opacity hover:opacity-90"
+        className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-[0_0_28px_rgba(91,155,224,0.26)] transition-opacity hover:opacity-90"
       >
         {t('pbl.v2.completion.completionCta')}
         <ArrowRight className="w-4 h-4" />

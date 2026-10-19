@@ -1,3 +1,10 @@
+/**
+ * 本文件：把幻灯片图表数据转换为 ECharts 配置项。
+ * 职责：按图表类型（柱/条/折线/饼/环/面积/雷达/散点）生成
+ *       对应 option，统一处理主题色、文字色、网格线与图例。
+ * 关键点：入口做数据防御性校验，series/labels 非法直接返回 null；
+ *       多序列共用同一坐标与配色基准，保证对比口径一致。
+ */
 import type { ComposeOption } from 'echarts/core';
 import type {
   BarSeriesOption,
@@ -22,6 +29,10 @@ export interface ChartOptionPayload {
   stack?: boolean;
 }
 
+/**
+ * 由图表类型与数据生成 ECharts option；数据非法（series/labels
+ * 缺失或为空、饼图首序列非数组）时返回 null，由调用方回退占位。
+ */
 export const getChartOption = ({
   type,
   data,
@@ -64,6 +75,7 @@ export const getChartOption = ({
   }
   const categoryAxisLabel = {
     ...axisLabel,
+    // 类目不超过 8 个时强制全量显示标签，避免自动抽稀漏掉短类目
     interval: data.labels.length <= 8 ? 0 : ('auto' as const),
   };
 
@@ -323,6 +335,7 @@ export const getChartOption = ({
   if (type === 'scatter') {
     const series0 = data.series[0];
     if (!Array.isArray(series0)) return null;
+    // 散点以 series0 为 x、series1 为 y 配对；缺 y 轴数据时退化为 y=x
     const formatedData = [];
     for (let i = 0; i < series0.length; i++) {
       const x = series0[i];

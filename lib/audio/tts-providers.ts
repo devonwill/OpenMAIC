@@ -12,6 +12,7 @@
  * - MiniMax TTS: https://platform.minimaxi.com/docs/api-reference/speech-t2a-http
  * - Doubao TTS: https://www.volcengine.com/docs/6561/1257543
  * - ElevenLabs TTS: https://elevenlabs.io/docs/api-reference/text-to-speech/convert
+ * - Xiaomi MiMo TTS: https://platform.xiaomimimo.com/docs/api-reference
  * - Browser Native: Web Speech API (client-side only)
  *
  * HOW TO ADD A NEW PROVIDER:
@@ -94,9 +95,10 @@
 
 import type { TTSModelConfig } from './types';
 import { isCustomTTSProvider } from './types';
-import { isQwenCloneVoice, resolveTTSModelForVoice, TTS_PROVIDERS } from './constants';
+import { isQwenCloneVoice, isXiaomiCloneVoice, isXiaomiVoiceCloneModel, resolveTTSModelForVoice, TTS_PROVIDERS, XIAOMI_TTS_VOICE_CLONE_MODEL } from './constants';
 import { downloadAudio, QwenVoiceCloneError, synthesizeQwenVoiceClone } from './qwen-voice-clone';
 import { evictQwenVoiceRegistrationMemo } from './qwen-voice-clone-registration';
+import { readXiaomiVoiceReferenceDataUrl } from './xiaomi-voice-clone-registration';
 import { splitConcatenatedJsonObjects } from './json-stream';
 import {
   VOXCPM_VLLM_MODEL_ID,
@@ -282,6 +284,9 @@ export async function generateTTS(
 
       case 'lemonade-tts':
         return await generateLemonadeTTS(config, text, signal);
+
+      case 'xiaomi-tts':
+        return await generateXiaomiTTS(config, text, signal);
 
       case 'browser-native-tts':
         throw new Error(
@@ -1245,6 +1250,76 @@ async function generateDoubaoTTS(
   }
 
   return { audio: combined, format: 'mp3' };
+}
+
+/**
+ * Xiaomi MiMo TTS implementation.
+ *
+ * MiMo exposes synthesis through its OpenAI-compatible `/chat/completions`
+ * route rather than `/audio/speech`: the modality is carried by the role, so
+ * the text to speak rides in an `assistant` turn, and the audio comes back
+ * base64-encoded at `choices[0].message.audio.data`. Lit up via the Token Plan
+ * one-click setup.
+ */
+async function generateXiaomiTTS(
+  config: TTSModelConfig,
+  text: string,
+  signal: AbortSignal,
+): Promise<TTSGenerationResult> {
+  const baseUrl = config.baseUrl || TTS_PROVIDERS['xiaomi-tts'].defaultBaseUrl;
+
+  // Stateless clone: a non-catalog voice id resolves to the locally stored
+  // reference clip, which must ride along as a DataURL on every request —
+  // the provider has no server-side voice registry to look the id up in.
+  let modelId = config.modelId || TTS_PROVIDERS['xiaomi-tts'].defaultModelId;
+  let voiceValue: string | undefined = config.voice;
+  if (config.voice && isXiaomiCloneVoice(config.voice)) {
+    const referenceDataUrl = await readXiaomiVoiceReferenceDataUrl(config.voice);
+    if (!referenceDataUrl) {
+      throw new Error(
+        `Xiaomi clone voice "${config.voice}" has no stored reference clip; register the voice before synthesis.`,
+      );
+    }
+    voiceValue = referenceDataUrl;
+    modelId = XIAOMI_TTS_VOICE_CLONE_MODEL;
+  } else if (isXiaomiVoiceCloneModel(modelId)) {
+    // Self-heal a persisted voiceclone-model + catalog-voice wedge: the
+    // stateless clone model rejects preset voice ids.
+    modelId = TTS_PROVIDERS['xiaomi-tts'].defaultModelId;
+  }
+
+  const response = await ttsFetch(config.publicOnly, `${baseUrl}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${config.apiKey}`,
+      'Content-Type': 'application/json; charset=utf-8',
+    },
+    body: JSON.stringify({
+      model: modelId,
+      messages: [{ role: 'assistant', content: text }],
+      audio: { format: 'mp3', voice: voiceValue },
+    }),
+    signal,
+  });
+
+  if (!response.ok) {
+    throwIfTtsRateLimited('Xiaomi MiMo', response.status);
+    const errorText = await response.text().catch(() => response.statusText);
+    throw new Error(`Xiaomi MiMo TTS API error (${response.status}): ${errorText}`);
+  }
+
+  const payload = (await response.json().catch(() => null)) as {
+    choices?: Array<{ message?: { audio?: { data?: string } } }>;
+  } | null;
+  const base64Audio = payload?.choices?.[0]?.message?.audio?.data;
+  if (!base64Audio) {
+    throw new TTSInvalidResponseError(
+      'Xiaomi MiMo',
+      'Xiaomi MiMo TTS returned no audio data in choices[0].message.audio.data',
+    );
+  }
+
+  return { audio: new Uint8Array(Buffer.from(base64Audio, 'base64')), format: 'mp3' };
 }
 
 /**

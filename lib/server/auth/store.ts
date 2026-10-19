@@ -23,6 +23,9 @@ export interface UserRecord {
   role: UserRole;
   displayName: string;
   phone: string | null;
+  /** 头像：内置路径（/avatars/xxx.png）、外链 URL，或 data:image/...;base64,... 的内联图。
+   *  长度保护由 API 入口做，避免数据库写入阶段才报错；data URL 上限 200KB。 */
+  avatar: string | null;
 }
 
 export interface UserSessionRecord {
@@ -44,11 +47,13 @@ CREATE TABLE IF NOT EXISTS users (
   role TEXT NOT NULL CHECK (role IN ('teacher','student')),
   display_name TEXT NOT NULL,
   phone TEXT,
+  avatar TEXT,
   wechat_openid TEXT,
   wechat_unionid TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS users_email_lower_idx ON users (lower(email));
 
 CREATE TABLE IF NOT EXISTS user_sessions (
@@ -76,13 +81,14 @@ export async function ensureAuthSchema(queryable: Queryable): Promise<void> {
 
 interface UserRow extends Record<string, unknown> {
   id: string; email: string; password_hash: string; role: string;
-  display_name: string; phone: string | null;
+  display_name: string; phone: string | null; avatar: string | null;
 }
 
 function toUser(row: UserRow): UserRecord {
   return {
     id: row.id, email: row.email, passwordHash: row.password_hash,
     role: row.role as UserRole, displayName: row.display_name, phone: row.phone,
+    avatar: row.avatar ?? null,
   };
 }
 
@@ -122,7 +128,7 @@ export async function getUserByEmail(
   queryable: Queryable, email: string,
 ): Promise<UserRecord | null> {
   const result = await queryable.query<UserRow>(
-    `SELECT id, email, password_hash, role, display_name, phone
+    `SELECT id, email, password_hash, role, display_name, phone, avatar
        FROM users WHERE lower(email) = $1`, [email.trim().toLowerCase()],
   );
   return result.rows[0] ? toUser(result.rows[0]) : null;
@@ -130,11 +136,11 @@ export async function getUserByEmail(
 
 export async function updateUserProfile(
   queryable: Queryable, userId: string,
-  patch: { displayName: string; phone: string | null },
+  patch: { displayName: string; phone: string | null; avatar: string | null },
 ): Promise<void> {
   await queryable.query(
-    `UPDATE users SET display_name = $2, phone = $3, updated_at = now() WHERE id = $1`,
-    [userId, patch.displayName, patch.phone],
+    `UPDATE users SET display_name = $2, phone = $3, avatar = $4, updated_at = now() WHERE id = $1`,
+    [userId, patch.displayName, patch.phone, patch.avatar],
   );
 }
 
@@ -158,7 +164,7 @@ export async function getSessionWithUser(
   const result = await queryable.query<UserRow & {
     session_id: string; expires_at: Date; last_seen_at: Date;
   }>(
-    `SELECT u.id, u.email, u.password_hash, u.role, u.display_name, u.phone,
+    `SELECT u.id, u.email, u.password_hash, u.role, u.display_name, u.phone, u.avatar,
             s.id AS session_id, s.expires_at, s.last_seen_at
        FROM user_sessions s JOIN users u ON u.id = s.user_id
       WHERE s.id = $1 AND s.expires_at > now()`, [sessionId],

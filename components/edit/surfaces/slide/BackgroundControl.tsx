@@ -1,3 +1,9 @@
+/**
+ * 本文件：幻灯片背景选择器（纯色 / 图片两个 Tab）。
+ * 职责：读取当前背景作为初值，通过 updateSlideBackground 以
+ * slide.update {background} 级别写回，而非元素级操作。
+ * 关键点：未设置背景时默认落在纯色 Tab（白色）；有图片背景时初始选中图片 Tab。
+ */
 'use client';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -10,6 +16,9 @@ import { updateSlideBackground, useResolvedSlideContent } from './use-slide-surf
  * Slide-background picker — solid color / image tabs. Slide-level, so it
  * dispatches `slide.update {background}` rather than an element op. Seeded from
  * the current background; defaults to the Solid tab (white) when none is set.
+ *
+ * 中文要点：纯色与图片的 onChange/onCommit 都直接落到同一个 slide 背景写入函数，
+ * 属幻灯片级修改，不进元素操作历史。
  */
 export function BackgroundControl() {
   const { t } = useI18n();

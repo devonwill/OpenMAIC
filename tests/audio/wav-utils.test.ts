@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isWavBlob, normalizeASRUploadAudio } from '@/lib/audio/wav-utils';
+import { audioBlobToWav, isWavBlob, normalizeASRUploadAudio } from '@/lib/audio/wav-utils';
 
 describe('isWavBlob', () => {
   it('detects audio/wav MIME type', () => {
@@ -45,5 +45,19 @@ describe('normalizeASRUploadAudio', () => {
     const result = await normalizeASRUploadAudio('funasr-asr', input);
     expect(result.blob).toBe(input);
     expect(result.fileName).toBe('recording.wav');
+  });
+
+  it('normalizes xiaomi-asr uploads to WAV (webm recordings are rejected upstream)', async () => {
+    const wavInput = new Blob([new Uint8Array([1, 2, 3])], { type: 'audio/wav' });
+    const wavResult = await normalizeASRUploadAudio('xiaomi-asr', wavInput);
+    expect(wavResult.blob).toBe(wavInput);
+    expect(wavResult.fileName).toBe('recording.wav');
+
+    // Non-WAV input routes through the WAV converter rather than being
+    // uploaded as the MediaRecorder webm container.
+    const webmInput = new Blob([new Uint8Array([1, 2, 3])], { type: 'audio/webm' });
+    // In node there is no AudioContext, so conversion must fail loudly with
+    // the browser-required error rather than silently passing webm through.
+    await expect(audioBlobToWav(webmInput)).rejects.toThrow(/browser/i);
   });
 });

@@ -116,7 +116,7 @@ export function UsageDashboard() {
     const chart = chartInstance.current;
     const axis = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.45)';
     const split = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
-    const accent = isDark ? '#a78bfa' : '#7c3aed'; // violet, matches primary
+    const accent = isDark ? '#93c5fd' : '#1d4ed8'; // 品牌蓝，与 globals.css --primary 同色
 
     chart.setOption({
       tooltip: { trigger: 'axis' },
@@ -152,8 +152,8 @@ export function UsageDashboard() {
               x2: 0,
               y2: 1,
               colorStops: [
-                { offset: 0, color: isDark ? 'rgba(167,139,250,0.35)' : 'rgba(124,58,237,0.25)' },
-                { offset: 1, color: isDark ? 'rgba(167,139,250,0.02)' : 'rgba(124,58,237,0.02)' },
+                { offset: 0, color: isDark ? 'rgba(147,197,253,0.35)' : 'rgba(29,78,216,0.25)' },
+                { offset: 1, color: isDark ? 'rgba(147,197,253,0.02)' : 'rgba(29,78,216,0.02)' },
               ],
             },
           },

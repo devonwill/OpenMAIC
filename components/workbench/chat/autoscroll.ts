@@ -1,3 +1,11 @@
+/**
+ * 本文件：工作台时间线的贴底跟随与重新锚定。
+ * 职责：基于 use-stick-to-bottom 实现「用户上滑即解锁、回底再锁定」，
+ * 并叠加两条领域规则——发送消息必须重新贴底，agent 轮次绝不强行贴底；
+ * 视口自身高度变化（输入区增高）时保住贴底锁。
+ * 关键点：以挂载时的用户消息集合为基线，回放的存量消息不会被误判为
+ * N 次发送；跟随状态机本身复用成熟库，不在本文件重写。
+ */
 'use client';
 
 /**
@@ -43,8 +51,8 @@ function viewportGeometry(viewport: HTMLElement): ViewportGeometry {
   };
 }
 
-/**
- * Composer rows and question controls grow outside the transcript content, so
+/** 视口底部锁：观察视口自身高度，仅当用户原本贴底且高度被压缩时才回拉贴底。 */
+/** Composer rows and question controls grow outside the transcript content, so
  * the library's content observer cannot see them. Track the scroll viewport's
  * own height and preserve the bottom lock only when the user was near the tail
  * before that height was taken away.
@@ -89,6 +97,10 @@ function userNodeKeys(chat: ChatNode[]): string[] {
   return chat.filter((n) => n.kind === 'user').map((n) => n.key);
 }
 
+/**
+ * 组合自动滚动：贴底跟随 + 视口锚定 + 发送消息触发的重新锚定。
+ * 仅新增用户节点（挂载基线之后）才回底，agent 轮次不打断阅读。
+ */
 export function useWorkbenchAutoscroll(chat: ChatNode[]): {
   scrollRef: StickToBottomInstance['scrollRef'];
   contentRef: StickToBottomInstance['contentRef'];
@@ -118,9 +130,10 @@ export function useWorkbenchAutoscroll(chat: ChatNode[]): {
     const current = new Set(userNodeKeys(chat));
     const previous = seen.current;
     seen.current = current;
-    if (previous === null) return;
+    if (previous === null) return; // 首次运行只记基线，不算「新发送」
     for (const key of current) {
       if (!previous.has(key)) {
+        // 出现基线外的新用户节点 = 本地发送，重新锚定到底部。
         void scrollToBottomRef.current();
         return;
       }

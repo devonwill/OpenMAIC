@@ -1,3 +1,10 @@
+/**
+ * 本文件：编辑态形状元素组件。
+ * 职责：用 SVG path 绘制形状（含渐变/图案填充、描边、翻转、阴影），
+ *       双击后在形状内通过 ProseMirror 编辑文字。
+ * 关键点：viewBox 缺失或非法时回退到元素宽高，缩放比例按 viewBox 归一；
+ *         文本清空（去标签后）会移除 text 属性而非删除形状。
+ */
 'use client';
 
 import { useMemo, useState, useEffect, useCallback } from 'react';
@@ -68,6 +75,7 @@ export function ShapeElement({ elementInfo, selectElement }: ShapeElementProps) 
       content: typeof elementInfo.text.content === 'string' ? elementInfo.text.content : '',
     };
   }, [elementInfo.text]);
+  // viewBox 必须为正有限数才能用于缩放计算，否则回退到元素宽高（||1 防除零）
   const viewBoxWidth =
     Array.isArray(elementInfo.viewBox) &&
     Number.isFinite(elementInfo.viewBox[0]) &&

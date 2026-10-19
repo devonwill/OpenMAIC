@@ -4,6 +4,11 @@ import { Trash2 } from 'lucide-react';
 import { useI18n } from '@/lib/hooks/use-i18n';
 import { deleteSlideElement } from './use-slide-surface';
 
+/**
+ * 本文件：锚定工具条上的删除按钮。
+ * 职责：点击删除当前选中的幻灯片元素。
+ * 关键点：mousedown 阻止默认行为以保住画布选中态，等 click 再执行删除。
+ */
 /** Trash button for the anchored bars — deletes the element and clears the selection. */
 export function DeleteButton({ elementId }: { readonly elementId: string }) {
   const { t } = useI18n();

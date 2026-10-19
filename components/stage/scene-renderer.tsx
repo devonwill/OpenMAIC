@@ -1,3 +1,10 @@
+/**
+ * 本文件：播放路径的场景渲染分发器。
+ * 职责：按 scene.type（slide / quiz / interactive / pbl）选择对应渲染器，
+ * 并校验 content 类型与场景类型一致。
+ * 关键点：编辑模式由 EditShell 顶层接管，本组件只服务播放路径，
+ * 故不判断 mode === 'edit'。
+ */
 'use client';
 
 import { useMemo } from 'react';
@@ -17,6 +24,7 @@ interface SceneRendererProps {
  * directly as a top-level takeover — SceneRenderer is only on the playback
  * path, so it does not branch on `mode === 'edit'`.
  */
+// 类型不符时给占位提示而非崩溃；useMemo 以 scene/mode 为依赖避免重渲染时重建。
 export function SceneRenderer({ scene, mode }: SceneRendererProps) {
   const renderer = useMemo(() => {
     switch (scene.type) {

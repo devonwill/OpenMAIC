@@ -65,10 +65,10 @@ const TYPE_THEME: Record<
     dot: 'bg-blue-400',
   },
   quiz: {
-    chip: 'bg-purple-50 text-purple-600 dark:bg-purple-500/10 dark:text-purple-300',
-    chipHover: 'hover:bg-purple-100/80 dark:hover:bg-purple-500/15',
-    accent: 'bg-purple-500',
-    dot: 'bg-purple-400',
+    chip: 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300',
+    chipHover: 'hover:bg-blue-100/80 dark:hover:bg-blue-500/15',
+    accent: 'bg-blue-500',
+    dot: 'bg-blue-400',
   },
   interactive: {
     chip: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300',
@@ -477,8 +477,13 @@ function SceneRow({
   const titleRef = useRef<HTMLTextAreaElement>(null);
   const descRef = useRef<HTMLTextAreaElement>(null);
 
+  // title 在类型上必填，但运行时数据（sessionStorage 恢复、SSE 流式分片）
+  // 未经校验，可能缺失该字段；undefined 会让下方 .trim() 直接抛错。
+  // 就地兜成空串：空白标题本就要亮琥珀点并阻断生成，用户输入后自愈。
+  const titleText = typeof outline.title === 'string' ? outline.title : '';
+
   // Auto-resize textareas to content for the typography-first feel.
-  useAutoResize(titleRef, outline.title);
+  useAutoResize(titleRef, titleText);
   useAutoResize(descRef, outline.description);
 
   const addKeyPoint = (raw: string) => {
@@ -598,14 +603,14 @@ function SceneRow({
         <div className="min-w-0 flex-1 space-y-1.5">
           {/* Title row */}
           <div className="flex items-start justify-between gap-2">
-            {!disabled && !outline.title.trim() && (
+            {!disabled && !titleText.trim() && (
               // Incomplete marker — a soft amber dot before a blank title. A
               // blank title blocks generation; the gate below counts how many.
               <span aria-hidden className="mt-[11px] h-2 w-2 shrink-0 rounded-full bg-amber-400" />
             )}
             <textarea
               ref={titleRef}
-              value={outline.title}
+              value={titleText}
               onChange={(event) => onUpdate({ title: event.target.value })}
               placeholder={t('generation.sceneTitlePlaceholder')}
               disabled={disabled}
@@ -1117,7 +1122,7 @@ function QuizConfigDisclosure({
                     'flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-all',
                     'border',
                     selected
-                      ? 'border-purple-500/40 bg-purple-500/10 text-purple-700 dark:text-purple-200'
+                      ? 'border-blue-500/40 bg-blue-500/10 text-blue-700 dark:text-blue-200'
                       : 'border-border/40 bg-transparent text-muted-foreground hover:border-border hover:bg-muted/60 hover:text-foreground',
                     isOnlySelected && 'cursor-not-allowed opacity-90',
                   )}

@@ -1,3 +1,9 @@
+/**
+ * 本文件：编辑态图片元素组件。
+ * 职责：渲染图片（含裁剪、滤镜、翻转、阴影、蒙色），支持选中、裁剪编辑，
+ *       并按媒体解析结果显示骨架屏/禁用/失败态与重试按钮。
+ * 关键点：裁剪产生的位移需在元素已旋转时做旋转补偿，见 handleClip。
+ */
 'use client';
 
 import type { PPTImageElement, ImageElementClip } from '@openmaic/dsl';
@@ -88,6 +94,9 @@ export function ImageElement({ elementInfo, selectElement }: ImageElementProps) 
     let centerOffsetX = 0;
     let centerOffsetY = 0;
 
+    // 元素带旋转时，裁剪框中心相对元素中心的偏移也要跟着旋转：
+    // 先按 -rotate 弧度旋转该偏移向量，再取旋转前后差值，
+    // 用于修正 left/top，保证旋转态下裁剪结果视觉不漂移。
     if (elementInfo.rotate) {
       const centerX = left + width / 2 - (elementInfo.left + elementInfo.width / 2);
       const centerY = -(top + height / 2 - (elementInfo.top + elementInfo.height / 2));

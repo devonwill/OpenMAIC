@@ -13,7 +13,10 @@ import {
   DEFAULT_QWEN_TTS_VOICE_CLONE_MODEL,
   isQwenCatalogVoice,
   isQwenVoiceCloneModel,
+  isXiaomiCatalogVoice,
+  isXiaomiVoiceCloneModel,
   TTS_PROVIDERS,
+  XIAOMI_TTS_VOICE_CLONE_MODEL,
 } from '@/lib/audio/constants';
 
 const log = createLogger('ServerProviderConfig');
@@ -89,6 +92,7 @@ const TTS_ENV_MAP: Record<string, string> = {
   TTS_OPENAI: 'openai-tts',
   TTS_AZURE: 'azure-tts',
   TTS_GLM: 'glm-tts',
+  TTS_XIAOMI: 'xiaomi-tts',
   TTS_QWEN: 'qwen-tts',
   TTS_VOXCPM: 'voxcpm-tts',
   TTS_DOUBAO: 'doubao-tts',
@@ -103,6 +107,7 @@ const ASR_ENV_MAP: Record<string, string> = {
   ASR_AZURE: 'azure-asr',
   ASR_FUNASR: 'funasr-asr',
   ASR_LEMONADE: 'lemonade-asr',
+  ASR_XIAOMI: 'xiaomi-asr',
 };
 
 const PDF_ENV_MAP: Record<string, string> = {
@@ -755,6 +760,38 @@ export function resolveTTSModel(
       // operator-pinned non-VC model, otherwise the catalog default.
       if (normalizedClientModel === vcModel) {
         return pinnedCatalogModel || TTS_PROVIDERS['qwen-tts'].defaultModelId;
+      }
+    }
+
+    if (normalizedClientModel) return normalizedClientModel;
+    if (pinnedModels.length > 0) return pinnedModels[0];
+    return undefined;
+  }
+
+  if (providerId === 'xiaomi-tts') {
+    const requestedIsVC = !!clientModel && isXiaomiVoiceCloneModel(clientModel);
+    const normalizedClientModel = requestedIsVC ? XIAOMI_TTS_VOICE_CLONE_MODEL : clientModel;
+    const allowedModels = new Set([...pinnedModels, XIAOMI_TTS_VOICE_CLONE_MODEL]);
+
+    if (
+      pinnedModels.length > 0 &&
+      normalizedClientModel &&
+      !allowedModels.has(normalizedClientModel)
+    ) {
+      throw new TTSModelNotAllowedError(providerId, normalizedClientModel);
+    }
+
+    if (voiceId) {
+      // A non-catalog voice id is a locally registered clone: the stateless
+      // voiceclone model is mandatory and the operator pin must not win.
+      if (!isXiaomiCatalogVoice(voiceId)) return XIAOMI_TTS_VOICE_CLONE_MODEL;
+      const pinnedCatalogModel = pinnedModels.find((model) => model !== XIAOMI_TTS_VOICE_CLONE_MODEL);
+      if (pinnedModels.length > 0 && !pinnedCatalogModel) {
+        throw new TTSModelNotAllowedError(providerId, TTS_PROVIDERS['xiaomi-tts'].defaultModelId);
+      }
+      // Self-heal persisted VC-model + catalog-voice wedges, mirroring Qwen.
+      if (normalizedClientModel === XIAOMI_TTS_VOICE_CLONE_MODEL) {
+        return pinnedCatalogModel || TTS_PROVIDERS['xiaomi-tts'].defaultModelId;
       }
     }
 

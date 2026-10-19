@@ -1,3 +1,10 @@
+/**
+ * 本文件：用户消息气泡。
+ * 职责：右对齐实底气泡渲染用户文本，以及随消息附带的课程引用、
+ * 元素引用与附件名。
+ * 关键点：右对齐即作者标识，不显示头像与昵称；引用回显用气泡同色
+ * 胶囊而非输入区的紫色胶囊，保持实底面上单一配色。
+ */
 'use client';
 
 /**
@@ -19,6 +26,7 @@ import { wbStyles as styles } from './chat-styles';
  * same label, rendered in the bubble's own on-primary chip skin, so "what I
  * pointed at" stays readable in the transcript weeks later.
  */
+// 已发送气泡里的元素引用回显：同序号同标签，作为「当时点了什么」的存证。
 function SentElementRefs({ refs }: { refs: readonly ElementRef[] }) {
   return (
     <div className={styles.userBubble.materials}>
@@ -45,6 +53,7 @@ function SentElementRefs({ refs }: { refs: readonly ElementRef[] }) {
   );
 }
 
+// 各类引用区只在非空时渲染，空文本消息（纯附件/纯引用）也能正常成泡。
 export function UserBubble({
   text,
   materials = [],

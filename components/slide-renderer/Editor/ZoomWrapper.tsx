@@ -1,3 +1,10 @@
+/**
+ * 本文件：演示时按元素聚焦的缩放动画包装器。
+ * 职责：以指定元素中心（百分比坐标）为原点，用弹簧动画
+ *       对整个画布做 scale 缩放，无目标时直接透传子节点。
+ * 关键点：transformOrigin 用百分比表示，需与 geometry 的
+ *       centerX/centerY 口径一致。
+ */
 'use client';
 
 import { motion } from 'motion/react';

@@ -90,6 +90,15 @@ export function isQwenVoiceCloneModel(modelId?: string, configuredModelId?: stri
   );
 }
 
+export const XIAOMI_TTS_VOICE_CLONE_MODEL = 'mimo-v2.5-tts-voiceclone';
+
+export function isXiaomiVoiceCloneModel(modelId?: string): boolean {
+  return (
+    !!modelId &&
+    (modelId === XIAOMI_TTS_VOICE_CLONE_MODEL || /-voiceclone(?:-|$)/iu.test(modelId))
+  );
+}
+
 /** A Qwen catalog voice is provider-owned and must never use the clone model. */
 export function isQwenCatalogVoice(voiceId?: string): boolean {
   return !!voiceId && TTS_PROVIDERS['qwen-tts'].voices.some((voice) => voice.id === voiceId);
@@ -98,6 +107,16 @@ export function isQwenCatalogVoice(voiceId?: string): boolean {
 /** A non-catalog Qwen voice ID is an enrolled clone; local profile storage is not authoritative. */
 export function isQwenCloneVoice(voiceId?: string): boolean {
   return !!voiceId && !isQwenCatalogVoice(voiceId);
+}
+
+/** A Xiaomi catalog voice is a provider preset and must never use the clone model. */
+export function isXiaomiCatalogVoice(voiceId?: string): boolean {
+  return !!voiceId && TTS_PROVIDERS['xiaomi-tts'].voices.some((voice) => voice.id === voiceId);
+}
+
+/** A non-catalog Xiaomi voice id resolves to a locally stored reference clip (stateless clone). */
+export function isXiaomiCloneVoice(voiceId?: string): boolean {
+  return !!voiceId && !isXiaomiCatalogVoice(voiceId);
 }
 
 /**
@@ -109,11 +128,19 @@ export function resolveTTSModelForVoice(
   voiceId: string,
   requestedModelId?: string,
 ): string | undefined {
-  if (providerId !== 'qwen-tts') return requestedModelId;
-  if (isQwenCloneVoice(voiceId)) return QWEN_TTS_VOICE_CLONE_MODEL;
-  return requestedModelId && !isQwenVoiceCloneModel(requestedModelId)
-    ? requestedModelId
-    : TTS_PROVIDERS['qwen-tts'].defaultModelId;
+  if (providerId === 'qwen-tts') {
+    if (isQwenCloneVoice(voiceId)) return QWEN_TTS_VOICE_CLONE_MODEL;
+    return requestedModelId && !isQwenVoiceCloneModel(requestedModelId)
+      ? requestedModelId
+      : TTS_PROVIDERS['qwen-tts'].defaultModelId;
+  }
+  if (providerId === 'xiaomi-tts') {
+    if (isXiaomiCloneVoice(voiceId)) return XIAOMI_TTS_VOICE_CLONE_MODEL;
+    return requestedModelId && !isXiaomiVoiceCloneModel(requestedModelId)
+      ? requestedModelId
+      : TTS_PROVIDERS['xiaomi-tts'].defaultModelId;
+  }
+  return requestedModelId;
 }
 
 export const TTS_PROVIDERS: Record<BuiltInTTSProviderId, TTSProviderConfig> = {
@@ -988,6 +1015,34 @@ export const TTS_PROVIDERS: Record<BuiltInTTSProviderId, TTSProviderConfig> = {
     speedRange: { min: 0.1, max: 10.0, default: 1.0 },
   },
 
+  'xiaomi-tts': {
+    id: 'xiaomi-tts',
+    name: '小米 MiMo TTS',
+    requiresApiKey: true,
+    defaultBaseUrl: 'https://token-plan-cn.xiaomimimo.com/v1',
+    icon: '/logos/xiaomi.svg',
+    // The preset-voice model serves plain synthesis. The voiceclone variant is
+    // selected only via model-follows-voice when the voice id maps to a locally
+    // stored reference clip, so catalog-voice requests never reach it.
+    models: [
+      { id: 'mimo-v2.5-tts', name: 'MiMo V2.5 TTS' },
+      { id: XIAOMI_TTS_VOICE_CLONE_MODEL, name: 'MiMo V2.5 TTS Voice Clone' },
+    ],
+    defaultModelId: 'mimo-v2.5-tts',
+    voices: [
+      { id: 'mimo_default', name: '默认', language: 'zh-CN' },
+      { id: '冰糖', name: '冰糖', language: 'zh-CN' },
+      { id: '茉莉', name: '茉莉', language: 'zh-CN' },
+      { id: '苏打', name: '苏打', language: 'zh-CN' },
+      { id: '白桦', name: '白桦', language: 'zh-CN' },
+      { id: 'Mia', name: 'Mia', language: 'en-US' },
+      { id: 'Chloe', name: 'Chloe', language: 'en-US' },
+      { id: 'Milo', name: 'Milo', language: 'en-US' },
+      { id: 'Dean', name: 'Dean', language: 'en-US' },
+    ],
+    supportedFormats: ['mp3', 'wav'],
+  },
+
   'lemonade-tts': {
     id: 'lemonade-tts',
     name: 'Lemonade TTS',
@@ -1327,6 +1382,18 @@ export const ASR_PROVIDERS: Record<BuiltInASRProviderId, ASRProviderConfig> = {
     supportedLanguages: CUSTOM_ASR_DEFAULT_LANGUAGES,
     supportedFormats: ['wav'],
   },
+
+  'xiaomi-asr': {
+    id: 'xiaomi-asr',
+    name: '小米 MiMo ASR',
+    requiresApiKey: true,
+    defaultBaseUrl: 'https://token-plan-cn.xiaomimimo.com/v1',
+    icon: '/logos/xiaomi.svg',
+    models: [{ id: 'mimo-v2.5-asr', name: 'MiMo V2.5 ASR' }],
+    defaultModelId: 'mimo-v2.5-asr',
+    supportedLanguages: ['auto', 'zh', 'en'],
+    supportedFormats: ['wav', 'mp3'],
+  },
 };
 
 /**
@@ -1343,6 +1410,7 @@ export const DEFAULT_TTS_VOICES: Record<BuiltInTTSProviderId, string> = {
   'elevenlabs-tts': 'EXAVITQu4vr4xnSDxMaL',
   'minimax-tts': 'female-yujie',
   'lemonade-tts': 'af_heart',
+  'xiaomi-tts': 'mimo_default',
   'browser-native-tts': 'default',
 };
 
@@ -1356,6 +1424,7 @@ export const DEFAULT_TTS_MODELS: Record<BuiltInTTSProviderId, string> = {
   'elevenlabs-tts': 'eleven_multilingual_v2',
   'minimax-tts': 'speech-2.8-hd',
   'lemonade-tts': 'kokoro-v1',
+  'xiaomi-tts': 'mimo-v2.5-tts',
   'browser-native-tts': '',
 };
 

@@ -11,6 +11,9 @@
  *  - else synthesize the descriptor once, register, and return the clip so the
  *    client can cache it.
  *
+ * GET /api/generate/voice?providerId=… — enumerate voices already registered,
+ * so a clip enrolled on one browser still shows up in the picker on another.
+ *
  * POST /api/generate/voice
  */
 
@@ -29,6 +32,7 @@ import { findUnsafeNetworkTargetError, validatePublicUrlForSSRF } from '@/lib/se
 import { normalizeVoiceDesign } from '@/lib/audio/voice-design';
 import {
   getVoiceRegistrationAdapter,
+  listProvidersWithVoiceListing,
   type VoiceRegistrationConfig,
 } from '@/lib/audio/voice-registration';
 import { QwenVoiceCloneError, qwenVoiceCloneErrorMessage } from '@/lib/audio/qwen-voice-clone';
@@ -61,6 +65,50 @@ function childSignal(
   };
 }
 
+/**
+ * List voices the backend already holds.
+ *
+ * `providerId` narrows the answer; omitting it reports every provider that can
+ * enumerate its registration, so the picker needs a single request regardless
+ * of how many clone backends exist. No connection config is required: a
+ * registration store is authoritative on its own, and the picker must work
+ * before the user has configured a backend here.
+ */
+export async function GET(req: NextRequest) {
+  const requested = req.nextUrl.searchParams.get('providerId')?.trim();
+  const providerIds = requested ? [requested] : listProvidersWithVoiceListing();
+  if (requested && !getVoiceRegistrationAdapter(requested)) {
+    return apiError(
+      'INVALID_REQUEST',
+      400,
+      `Provider "${requested}" does not support voice registration`,
+    );
+  }
+  try {
+    const voices: Array<{
+      providerId: string;
+      voiceId: string;
+      name?: string;
+      createdAt?: number;
+    }> = [];
+    for (const providerId of providerIds) {
+      const adapter = getVoiceRegistrationAdapter(providerId);
+      if (!adapter?.listVoices) continue;
+      for (const voice of await adapter.listVoices()) {
+        voices.push({ providerId, ...voice });
+      }
+    }
+    return apiSuccess({ voices });
+  } catch (error) {
+    log.error(`Listing registered voices failed [provider=${requested ?? 'all'}]:`, error);
+    return apiError(
+      'GENERATION_FAILED',
+      500,
+      error instanceof Error ? error.message : String(error),
+    );
+  }
+}
+
 export async function POST(req: NextRequest) {
   let providerId: string | undefined;
   let voiceId: string | undefined;
@@ -76,6 +124,7 @@ export async function POST(req: NextRequest) {
     const body = (await req.json()) as {
       providerId?: string;
       voiceId?: string;
+      name?: string;
       descriptor?: unknown;
       language?: string;
       referenceAudioBase64?: string;
@@ -194,6 +243,7 @@ export async function POST(req: NextRequest) {
         cfg,
         {
           voiceId,
+          name: body.name,
           referenceAudioBase64: body.referenceAudioBase64,
           mimeType: body.mimeType,
           refText: body.refText,
@@ -220,6 +270,7 @@ export async function POST(req: NextRequest) {
       cfg,
       {
         voiceId,
+        name: body.name,
         referenceAudioBase64: clip.referenceAudioBase64,
         mimeType: clip.mimeType,
       },

@@ -18,9 +18,6 @@ import {
   Trash2,
   Search,
   Settings,
-  Sun,
-  Moon,
-  Monitor,
   ChevronUp,
   Upload,
   Sparkles,
@@ -30,7 +27,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { useI18n } from '@/lib/hooks/use-i18n';
-import { LanguageSwitcher } from '@/components/language-switcher';
+import { useAuth } from '@/lib/hooks/use-auth';
 import { UserMenu } from '@/components/auth/user-menu';
 import { createLogger } from '@/lib/logger';
 import { Button } from '@/components/ui/button';
@@ -40,7 +37,6 @@ import { cn } from '@/lib/utils';
 import { SettingsDialog } from '@/components/settings';
 import { GenerationToolbar } from '@/components/generation/generation-toolbar';
 import { AgentBar } from '@/components/agent/agent-bar';
-import { useTheme } from '@/lib/hooks/use-theme';
 import { nanoid } from 'nanoid';
 import { deleteDocumentBlob, storeDocumentBlob } from '@/lib/utils/image-storage';
 import { normalizeDocumentMimeType } from '@/lib/document/mime';
@@ -82,6 +78,8 @@ import { useMediaGenerationStore } from '@/lib/store/media-generation';
 import { toast } from 'sonner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useDraftCache } from '@/lib/hooks/use-draft-cache';
+import type { KnowledgeSelection } from '@/lib/knowledge/quota';
+import { readKnowledgeSelection, storeKnowledgeSelection } from '@/lib/knowledge/selection';
 import { SpeechButton } from '@/components/audio/speech-button';
 import { useImportClassroom } from '@/lib/import/use-import-classroom';
 import {
@@ -118,6 +116,8 @@ interface FormState {
   webSearch: boolean;
   interactiveMode: boolean;
   vocationalTestMode: boolean;
+  /** 图2 知识库 selection + three-route citation quota. */
+  knowledge: KnowledgeSelection;
 }
 
 const initialFormState: FormState = {
@@ -126,11 +126,12 @@ const initialFormState: FormState = {
   webSearch: false,
   interactiveMode: false,
   vocationalTestMode: false,
+  knowledge: { bundleIds: [] },
 };
 
 function HomePage() {
   const { t } = useI18n();
-  const { theme, setTheme } = useTheme();
+  const { user } = useAuth();
   const router = useRouter();
   // Do not replay the classic hero's entrance after the route handoff already
   // carried the lockup and composer into place.
@@ -157,8 +158,13 @@ function HomePage() {
       cancelled = true;
     };
   }, [workbenchBuildEnabled]);
-  const workbenchEntryEnabled = workbenchBuildEnabled && workbenchRuntimeEnabled;
+  // Pro 工作台仅对教师开放：学生既不显示入口，也不应能直接进入路由
+  // （路由级拦截在 `app/workspace/page.tsx` 与 middleware 一并补）。学生可以
+  // 用 basic 课堂生成（依赖 LLM provider，但走 standard / interactive 路径）。
+  const isTeacher = user?.role === 'teacher';
+  const workbenchEntryEnabled = workbenchBuildEnabled && workbenchRuntimeEnabled && isTeacher;
   const enterWorkbench = () => {
+    if (promptTeacherForLLMSetup(t('home.workbenchEntry'))) return;
     const href = workspaceResumeHref(readLastWorkspaceSessionId());
     startProSwap(href, (next) => router.push(next));
   };
@@ -166,6 +172,14 @@ function HomePage() {
     if (workbenchEntryEnabled) router.prefetch('/workspace');
   }, [router, workbenchEntryEnabled]);
   const [form, setForm] = useState<FormState>(initialFormState);
+  // 图1 勾选的知识库持久化到 localStorage：课堂讨论（/api/chat）发出前读取
+  // 同一份勾选，保证检索范围与生成时一致。挂载后再水合，避免 SSR 不匹配。
+  useEffect(() => {
+    const stored = readKnowledgeSelection();
+    if (stored.bundleIds.length > 0 || stored.quota !== undefined) {
+      setForm((prev) => ({ ...prev, knowledge: stored }));
+    }
+  }, []);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsSection, setSettingsSection] = useState<
     import('@/lib/types/settings').SettingsSection | undefined
@@ -180,6 +194,19 @@ function HomePage() {
   // instead of inspecting modelId directly.
   const providersConfig = useSettingsStore((s) => s.providersConfig);
   const hasUsableProvider = hasUsableLLMProvider(providersConfig);
+  // 教师在注册后未配置大模型时不主动打断；第一次点 Enter Classroom 或工作台
+  // 时再提示配置。`hasUsableProvider` 来自 settings-validation 的统一判定
+  // （任何 provider 含 apiKey 即视为可用，与 #580 不变式一致）。
+  const teacherNeedsLLMSetup = isTeacher && !hasUsableProvider;
+  // 拦截器：教师首次触发大模型相关功能时打开系统设置（默认跳到 providers
+  // 区块），同时 toast 提示。返回 true 表示已拦截，调用方应早返。
+  const promptTeacherForLLMSetup = (featureLabel: string): boolean => {
+    if (!teacherNeedsLLMSetup) return false;
+    setSettingsSection('providers');
+    setSettingsOpen(true);
+    toast(t('home.setupLLMFirst', { feature: featureLabel }));
+    return true;
+  };
   const [recentOpen, setRecentOpen] = useState(true);
   const persistRecentOpen = (next: boolean) => {
     setRecentOpen(next);
@@ -224,7 +251,6 @@ function HomePage() {
     setForm((prev) => (prev.requirement ? prev : { ...prev, requirement: cachedRequirement }));
   }, [cachedRequirement]);
 
-  const [themeOpen, setThemeOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // True while the Generate click drains upload-time ingests and builds the
   // generation session. Doubles as the guard flag that freezes the course
@@ -254,7 +280,6 @@ function HomePage() {
   const [createAndMoveTarget, setCreateAndMoveTarget] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchButtonRef = useRef<HTMLButtonElement>(null);
-  const toolbarRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const thumbnailsRef = useRef<Record<string, Slide>>({});
 
@@ -264,18 +289,6 @@ function HomePage() {
     setThumbnails(slides);
     window.setTimeout(() => revokeThumbnailSlideMediaUrls(previous), 0);
   };
-
-  // Close dropdowns when clicking outside
-  useEffect(() => {
-    if (!themeOpen) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (toolbarRef.current && !toolbarRef.current.contains(e.target as Node)) {
-        setThemeOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [themeOpen]);
 
   const loadClassrooms = async () => {
     try {
@@ -578,6 +591,12 @@ function HomePage() {
       setError(t('upload.requirementRequired'));
       return;
     }
+    // 教师未配置大模型：不在按钮上 hard-disable（那样没有下一步引导），而
+    // 是拦截点击、弹出系统设置对话框。`canGenerate` 不再仅看 requirement，
+    // 但我们仍保留它用于按钮的视觉禁用态（学生没配时就直接 disable）。
+    if (promptTeacherForLLMSetup(t('home.enterClassroom'))) {
+      return;
+    }
 
     setError(null);
 
@@ -657,6 +676,7 @@ function HomePage() {
       const sessionState = {
         sessionId: nanoid(),
         requirements,
+        knowledge: form.knowledge,
         pdfText: '',
         pdfImages: [],
         imageStorageIds: [],
@@ -695,7 +715,14 @@ function HomePage() {
     return date.toLocaleDateString();
   };
 
-  const canGenerate = !!form.requirement.trim() && hasUsableProvider;
+  // 按钮可点态：
+  //   学生 + 无 provider → false（硬禁用，学生没有配置 provider 的渠道）
+  //   学生 + 有 provider → true（basic 课堂生成可用）
+  //   教师 + 无 provider → !isRequirementEmpty（按钮可点，点了会被 promptTeacherForLLMSetup 拦截并引导配置）
+  //   教师 + 有 provider → !isRequirementEmpty
+  // 即：教师只受"是否填了需求"约束，学生还要受"是否配了 provider"约束。
+  const isRequirementEmpty = !form.requirement.trim();
+  const canGenerate = !isRequirementEmpty && (isTeacher || hasUsableProvider);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
@@ -722,82 +749,17 @@ function HomePage() {
           className="hidden"
         />
       )}
-      {/* ═══ Top-right pill (unchanged) ═══ */}
+      {/* ═══ Top-right pill ═══ */}
       <div
-        ref={toolbarRef}
         className="fixed top-4 right-4 z-50 flex items-center gap-1 bg-white/60 dark:bg-gray-800/60 backdrop-blur-md px-2 py-1.5 rounded-full border border-gray-100/50 dark:border-gray-700/50 shadow-sm"
       >
         <Link href="/knowledge" className="px-3 py-2 text-sm rounded-full hover:bg-muted">知识库</Link>
         {/* User Menu */}
         <UserMenu />
-        {/* Language Selector */}
-        <LanguageSwitcher onOpen={() => setThemeOpen(false)} />
 
-        <div className="w-[1px] h-4 bg-gray-200 dark:bg-gray-700" />
-
-        {/* Theme Selector */}
-        <div className="relative">
-          <button
-            onClick={() => {
-              setThemeOpen(!themeOpen);
-            }}
-            className="p-2 rounded-full text-gray-400 dark:text-gray-500 hover:bg-white dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-gray-200 hover:shadow-sm transition-all"
-          >
-            {theme === 'light' && <Sun className="w-4 h-4" />}
-            {theme === 'dark' && <Moon className="w-4 h-4" />}
-            {theme === 'system' && <Monitor className="w-4 h-4" />}
-          </button>
-          {themeOpen && (
-            <div className="absolute top-full mt-2 right-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden z-50 min-w-[140px]">
-              <button
-                onClick={() => {
-                  setTheme('light');
-                  setThemeOpen(false);
-                }}
-                className={cn(
-                  'w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2',
-                  theme === 'light' &&
-                    'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400',
-                )}
-              >
-                <Sun className="w-4 h-4" />
-                {t('settings.themeOptions.light')}
-              </button>
-              <button
-                onClick={() => {
-                  setTheme('dark');
-                  setThemeOpen(false);
-                }}
-                className={cn(
-                  'w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2',
-                  theme === 'dark' &&
-                    'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400',
-                )}
-              >
-                <Moon className="w-4 h-4" />
-                {t('settings.themeOptions.dark')}
-              </button>
-              <button
-                onClick={() => {
-                  setTheme('system');
-                  setThemeOpen(false);
-                }}
-                className={cn(
-                  'w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2',
-                  theme === 'system' &&
-                    'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400',
-                )}
-              >
-                <Monitor className="w-4 h-4" />
-                {t('settings.themeOptions.system')}
-              </button>
-            </div>
-          )}
-        </div>
-
-        <div className="w-[1px] h-4 bg-gray-200 dark:bg-gray-700" />
-
-        {/* Settings Button */}
+        {/* Settings Button — entry point for language/theme/general settings.
+            The home page no longer hosts a language or theme toggle in the
+            header pill; both are reachable from the system settings dialog. */}
         <div className="relative">
           <button
             onClick={() => setSettingsOpen(true)}
@@ -823,7 +785,7 @@ function HomePage() {
           style={{ animationDuration: '4s' }}
         />
         <div
-          className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse"
+          className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse"
           style={{ animationDuration: '6s' }}
         />
       </div>
@@ -838,8 +800,8 @@ function HomePage() {
         {/* ── Logo ── */}
         <div className="relative" data-pro-morph="lockup">
           <motion.img
-            src="/logo-horizontal.png"
-            alt="OpenMAIC"
+            src="/logo-horizontal.svg"
+            alt="OpenRobotics"
             initial={heroEnter({ opacity: 0, scale: 0.9 })}
             animate={{ opacity: 1, scale: 1 }}
             transition={{
@@ -879,7 +841,7 @@ function HomePage() {
         >
           <div
             data-pro-morph="composer"
-            className="w-full rounded-2xl border border-border/60 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-xl shadow-black/[0.03] dark:shadow-black/20 transition-shadow focus-within:shadow-2xl focus-within:shadow-violet-500/[0.06]"
+            className="w-full rounded-2xl border border-border/60 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-xl shadow-black/[0.03] dark:shadow-black/20 transition-shadow focus-within:shadow-2xl focus-within:shadow-blue-500/[0.06]"
           >
             {/* ── Greeting + Profile + Agents ── */}
             <div className="relative z-20 flex items-start justify-between">
@@ -906,6 +868,11 @@ function HomePage() {
                 <GenerationToolbar
                   webSearch={form.webSearch}
                   onWebSearchChange={(v) => updateForm('webSearch', v)}
+                  knowledge={form.knowledge}
+                  onKnowledgeChange={(v) => {
+                    updateForm('knowledge', v);
+                    storeKnowledgeSelection(v);
+                  }}
                   onSettingsOpen={(section) => {
                     setSettingsSection(section);
                     setSettingsOpen(true);
@@ -1317,7 +1284,7 @@ function HomePage() {
                                   />
                                   {/* Search view: show the owning folder as a badge. */}
                                   {isSearching && classroom.folderId && (
-                                    <span className="absolute bottom-2 left-2 z-10 inline-flex items-center gap-1 rounded-md bg-violet-500/80 px-1.5 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm pointer-events-none">
+                                    <span className="absolute bottom-2 left-2 z-10 inline-flex items-center gap-1 rounded-md bg-blue-500/80 px-1.5 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm pointer-events-none">
                                       <Folder className="size-2.5" />
                                       {folderNameById.get(classroom.folderId) ?? ''}
                                     </span>
@@ -1351,7 +1318,7 @@ function HomePage() {
 
       {/* Footer — flows with content, at the very end */}
       <div className="mt-auto pt-12 pb-4 text-center text-xs text-muted-foreground/40">
-        OpenMAIC Open Source Project
+        OpenRobotics · Built on the OpenMAIC open-source project
       </div>
     </div>
   );
@@ -1456,7 +1423,7 @@ function GreetingBar() {
           onClick={() => setOpen(true)}
         >
           <div className="shrink-0 relative">
-            <div className="size-8 rounded-full overflow-hidden ring-[1.5px] ring-border/30 group-hover:ring-violet-400/60 dark:group-hover:ring-violet-400/40 transition-all duration-300">
+            <div className="size-8 rounded-full overflow-hidden ring-[1.5px] ring-border/30 group-hover:ring-blue-400/60 dark:group-hover:ring-blue-400/40 transition-all duration-300">
               <img src={avatar} alt="" className="size-full object-cover" />
             </div>
             <div className="absolute -bottom-0.5 -right-0.5 size-3.5 rounded-full bg-white dark:bg-slate-800 border border-border/40 flex items-center justify-center opacity-60 group-hover:opacity-100 transition-opacity">
@@ -1509,7 +1476,7 @@ function GreetingBar() {
                     setAvatarPickerOpen(!avatarPickerOpen);
                   }}
                 >
-                  <div className="size-8 rounded-full overflow-hidden ring-[1.5px] ring-violet-300/70 dark:ring-violet-500/40 transition-all duration-300">
+                  <div className="size-8 rounded-full overflow-hidden ring-[1.5px] ring-blue-300/70 dark:ring-blue-500/40 transition-all duration-300">
                     <img src={avatar} alt="" className="size-full object-cover" />
                   </div>
                   <motion.div
@@ -1547,7 +1514,7 @@ function GreetingBar() {
                       />
                       <button
                         onClick={commitName}
-                        className="shrink-0 size-5 rounded flex items-center justify-center text-violet-500 hover:bg-violet-100 dark:hover:bg-violet-900/30"
+                        className="shrink-0 size-5 rounded flex items-center justify-center text-blue-500 hover:bg-blue-100 dark:hover:bg-blue-900/30"
                       >
                         <Check className="size-3" />
                       </button>
@@ -1599,7 +1566,7 @@ function GreetingBar() {
                               'size-7 rounded-full overflow-hidden bg-gray-50 dark:bg-gray-800 cursor-pointer transition-all duration-150',
                               'hover:scale-110 active:scale-95',
                               avatar === url
-                                ? 'ring-2 ring-violet-400 dark:ring-violet-500 ring-offset-0'
+                                ? 'ring-2 ring-blue-400 dark:ring-blue-500 ring-offset-0'
                                 : 'hover:ring-1 hover:ring-muted-foreground/30',
                             )}
                           >
@@ -1611,7 +1578,7 @@ function GreetingBar() {
                             'size-7 rounded-full flex items-center justify-center cursor-pointer transition-all duration-150 border border-dashed',
                             'hover:scale-110 active:scale-95',
                             isCustomAvatar(avatar)
-                              ? 'ring-2 ring-violet-400 dark:ring-violet-500 ring-offset-0 border-violet-300 dark:border-violet-600 bg-violet-50 dark:bg-violet-900/30'
+                              ? 'ring-2 ring-blue-400 dark:ring-blue-500 ring-offset-0 border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/30'
                               : 'border-muted-foreground/30 text-muted-foreground/50 hover:border-muted-foreground/50',
                           )}
                           onClick={() => avatarInputRef.current?.click()}
@@ -1737,7 +1704,7 @@ function ClassroomCard({
           />
         ) : !slide ? (
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="size-12 rounded-2xl bg-gradient-to-br from-violet-100 to-blue-100 dark:from-violet-900/30 dark:to-blue-900/30 flex items-center justify-center">
+            <div className="size-12 rounded-2xl bg-gradient-to-br from-blue-100 to-orange-100 dark:from-blue-900/30 dark:to-orange-900/30 flex items-center justify-center">
               <span className="text-xl opacity-50">📄</span>
             </div>
           </div>
@@ -1841,7 +1808,7 @@ function ClassroomCard({
 
       {/* Info — outside the thumbnail */}
       <div className="mt-2.5 px-1 flex items-center gap-2">
-        <span className="shrink-0 inline-flex items-center rounded-full bg-violet-100 dark:bg-violet-900/30 px-2 py-0.5 text-[11px] font-medium text-violet-600 dark:text-violet-400">
+        <span className="shrink-0 inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 text-[11px] font-medium text-blue-600 dark:text-blue-400">
           {classroom.sceneCount} {t('classroom.slides')} · {formatDate(classroom.updatedAt)}
         </span>
         {editing ? (
@@ -1857,7 +1824,7 @@ function ClassroomCard({
               onBlur={commitRename}
               maxLength={100}
               placeholder={t('classroom.renamePlaceholder')}
-              className="w-full bg-transparent border-b border-violet-400/60 text-[15px] font-medium text-foreground/90 outline-none placeholder:text-muted-foreground/40"
+              className="w-full bg-transparent border-b border-blue-400/60 text-[15px] font-medium text-foreground/90 outline-none placeholder:text-muted-foreground/40"
             />
           </div>
         ) : (

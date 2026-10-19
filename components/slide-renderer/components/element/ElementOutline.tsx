@@ -1,3 +1,8 @@
+/**
+ * 本文件：元素描边（边框）叠加层组件。
+ * 职责：在元素绝对定位盒上覆盖一层 SVG 矩形路径，绘制实线/虚线/点线边框。
+ * 关键点：使用 non-scaling-stroke，元素缩放时线宽不被 transform 放大。
+ */
 'use client';
 
 import type { PPTElementOutline } from '@openmaic/dsl';
@@ -12,6 +17,8 @@ export interface ElementOutlineProps {
 /**
  * Element outline (border) component
  * Renders an SVG outline around an element based on outline configuration
+ *
+ * 中文：无描边配置时返回 null，不渲染任何 DOM。
  */
 export function ElementOutline({ width, height, outline }: ElementOutlineProps) {
   const { outlineWidth, outlineColor, strokeDashArray } = useElementOutline(outline);

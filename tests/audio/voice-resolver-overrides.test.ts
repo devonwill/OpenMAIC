@@ -7,6 +7,8 @@ import { describe, it, expect } from 'vitest';
 import type { AgentConfig } from '@/lib/orchestration/registry/types';
 import {
   resolveAgentVoice,
+  resolveExplicitAgentVoice,
+  resolveGlobalCloneOverride,
   resolveNarratorVoiceBinding,
   type ProviderWithVoices,
 } from '@/lib/audio/voice-resolver';
@@ -225,5 +227,99 @@ describe('resolveAgentVoice with overrides', () => {
         'qwen-tts': { apiKey: 'key', enabled: true },
       }),
     ).toEqual({ providerId: 'qwen-tts', modelId: 'qwen3-tts-flash', voiceId: 'Cherry' });
+  });
+});
+
+describe('resolveExplicitAgentVoice（显式单智能体绑定）', () => {
+  it('返回 settings 覆盖，voiceConfig 仅作次选', () => {
+    expect(
+      resolveExplicitAgentVoice(
+        agent('default-1', { providerId: 'qwen-tts', voiceId: 'Cherry' }),
+        [qwen],
+        { 'default-1': { providerId: 'qwen-tts', voiceId: 'Dylan' } },
+      ),
+    ).toEqual({
+      providerId: 'qwen-tts',
+      modelId: 'qwen3-tts-flash',
+      voiceId: 'Dylan',
+    });
+  });
+
+  it('覆盖的 provider 未启用时跳到 voiceConfig', () => {
+    expect(
+      resolveExplicitAgentVoice(
+        agent('default-1', { providerId: 'qwen-tts', voiceId: 'Cherry' }),
+        [qwen],
+        { 'default-1': { providerId: 'openai-tts', voiceId: 'alloy' } },
+      ),
+    ).toEqual({
+      providerId: 'qwen-tts',
+      modelId: 'qwen3-tts-flash',
+      voiceId: 'Cherry',
+    });
+  });
+
+  it('无任何绑定时返回 null，交由调用方落全局克隆默认或兜底', () => {
+    expect(resolveExplicitAgentVoice(agent('default-1'), [qwen], {})).toBeNull();
+    expect(resolveExplicitAgentVoice(agent('default-1'), [qwen])).toBeNull();
+  });
+
+  it('克隆 id 宽松通过（非 catalog 音色视为可移植克隆绑定）', () => {
+    expect(
+      resolveExplicitAgentVoice(agent('default-1'), [qwen], {
+        'default-1': { providerId: 'qwen-tts', voiceId: 'male-teacher-clone' },
+      }),
+    ).toEqual({
+      providerId: 'qwen-tts',
+      modelId: QWEN_TTS_VOICE_CLONE_MODEL,
+      voiceId: 'male-teacher-clone',
+    });
+  });
+});
+
+describe('调用方优先级：显式绑定 > 全局克隆默认 > 确定性兜底', () => {
+  const xiaomi: ProviderWithVoices = {
+    providerId: 'xiaomi-tts' as never,
+    providerName: 'MiMo',
+    voices: [{ id: 'global-clone', name: '全局克隆' }],
+    modelGroups: [],
+  };
+  const providers = [qwen, xiaomi];
+  const globalClone = {
+    useMyCloneVoice: true,
+    myCloneVoiceId: 'global-clone',
+    myCloneVoiceProvider: 'xiaomi-tts' as const,
+  };
+
+  it('显式绑定在场时压过全局克隆默认', () => {
+    const resolved =
+      resolveExplicitAgentVoice(
+        agent('default-1'),
+        providers,
+        { 'default-1': { providerId: 'qwen-tts', voiceId: 'male-teacher-clone' } },
+      ) ??
+      resolveGlobalCloneOverride(globalClone, providers) ??
+      resolveAgentVoice(agent('default-1'), 0, providers);
+    expect(resolved).toEqual({
+      providerId: 'qwen-tts',
+      modelId: QWEN_TTS_VOICE_CLONE_MODEL,
+      voiceId: 'male-teacher-clone',
+    });
+  });
+
+  it('无显式绑定时落全局克隆默认', () => {
+    const resolved =
+      resolveExplicitAgentVoice(agent('default-1'), providers, {}) ??
+      resolveGlobalCloneOverride(globalClone, providers) ??
+      resolveAgentVoice(agent('default-1'), 0, providers);
+    expect(resolved).toEqual({ providerId: 'xiaomi-tts', voiceId: 'global-clone' });
+  });
+
+  it('两者皆无时走确定性兜底', () => {
+    const resolved =
+      resolveExplicitAgentVoice(agent('default-1'), [qwen], {}) ??
+      resolveGlobalCloneOverride({ ...globalClone, useMyCloneVoice: false }, [qwen]) ??
+      resolveAgentVoice(agent('default-1'), 0, [qwen]);
+    expect(resolved).toEqual({ providerId: 'qwen-tts', voiceId: 'Cherry' });
   });
 });

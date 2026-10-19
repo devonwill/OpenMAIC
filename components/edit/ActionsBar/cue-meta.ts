@@ -1,4 +1,10 @@
 /**
+ * 本文件：时间轴动作/提示的视觉元数据字典。
+ * 职责：集中提供各动作类型的图标、i18n 标签键、着色与卡片配色，
+ * 以及元素绑定类型集合，替代此前散落在多处的重复映射。
+ * 关键点：标签存 i18n 键而非字面量，纯模块不依赖 React Hook。
+ */
+/**
  * Single source of truth for the timeline's cue/element taxonomy: per action
  * type, the icon + i18n label key + glyph tint + card accent; the set of
  * element-bound cue types; and element-type label keys. Previously these maps
@@ -111,6 +117,7 @@ const FALLBACK: CueMeta = {
   dash: 'border-muted-foreground/30',
 };
 
+/** 取某动作类型的视觉元数据；未知类型回退到通用样式。 */
 export function cueMeta(type: string): CueMeta {
   return META[type] ?? FALLBACK;
 }

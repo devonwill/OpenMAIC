@@ -1,3 +1,10 @@
+/**
+ * 本文件：编辑模式底部工作台容器。
+ * 职责：固定高度组合全局编辑条（DockEditBar）与旁白时间轴（ActionsBar），
+ * 提供折叠状态上下文，并按「会话/舞台/场景三元组身份」清理过期的元素拾取模式。
+ * 关键点：高度只受折叠影响、不支持拖高；拾取模式判定用身份而非归属，
+ * 防止切换页面后残留上一个页面的选元素状态。
+ */
 'use client';
 
 /**
@@ -40,6 +47,7 @@ const TIMELINE_DEFAULT_HEIGHT = 224;
 /** The axis of node icons, with room for the chips that hang off it. */
 const TIMELINE_COLLAPSED_HEIGHT = 86;
 
+/** 编辑模式底部工作台：上为全局编辑条，下为可折叠的旁白时间轴。 */
 export function EditDock({
   sceneId,
   sceneType,
@@ -82,6 +90,8 @@ export function EditDock({
   useEffect(() => {
     const target = useCanvasStore.getState().pickTarget;
     if (target?.purpose !== 'element-ref') return;
+    // 身份不匹配即解除：会话、课程、场景任一变化都视为换了一个上下文，
+    // 不让旧页面残留的选元素模式作用到新页面上。
     if (
       target.ownerSessionId !== sessionId ||
       target.stageId !== currentStageId ||

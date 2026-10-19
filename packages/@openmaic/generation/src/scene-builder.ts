@@ -1,5 +1,5 @@
 import { nanoid } from 'nanoid';
-import type { Action, Slide, SlideTheme } from '@openmaic/dsl';
+import type { Action, PPTElement, PPTImageElement, Slide, SlideTheme } from '@openmaic/dsl';
 import type { SceneOutline } from './outline-types.js';
 import type {
   CompleteScene,
@@ -16,6 +16,44 @@ export interface BuildCompleteSceneOptions {
    * The default remains a random `nanoid()` for drop-in compatibility.
    */
   sceneId?: string;
+}
+
+/**
+ * Unit logo stamped into the top-right corner of every GENERATED slide.
+ *
+ * Only the generation funnel (`buildCompleteScene`) applies it — imported /
+ * uploaded decks are parsed by `@openmaic/importer`, which never calls this
+ * module, so they stay untouched. The `src` is a same-origin path under
+ * `public/`: the renderer loads it directly and the PPTX exporter inlines it
+ * through the regular asset-manifest flow (refs are derived from the slide).
+ */
+const UNIT_LOGO_ID = 'unit-logo-uestc';
+
+/** Fresh element per scene so later in-place edits cannot cross-contaminate. */
+function createUnitLogoElement(): PPTImageElement {
+  return {
+    id: UNIT_LOGO_ID,
+    name: 'unit-logo',
+    type: 'image',
+    src: '/unit-logos/uestc.png',
+    // Top-right of the 1000 × (1000 * 0.5625) design canvas: 1000 - 64 - 20.
+    left: 916,
+    top: 20,
+    width: 64,
+    height: 64,
+    rotate: 0,
+    fixedRatio: true,
+  };
+}
+
+/**
+ * Append the logo on a copy — retry paths replay the same `content` object
+ * and must observe identical input across calls. Skip when content already
+ * carries the logo (e.g. regenerated from a previously stamped slide).
+ */
+function withUnitLogo(elements: PPTElement[]): PPTElement[] {
+  if (elements.some((element) => element.id === UNIT_LOGO_ID)) return elements;
+  return [...elements, createUnitLogoElement()];
 }
 
 /** Build a complete, store-independent scene from generated primitives. */
@@ -47,7 +85,7 @@ export function buildCompleteScene(
       viewportSize: 1000,
       viewportRatio: 0.5625,
       theme: defaultTheme,
-      elements: content.elements,
+      elements: withUnitLogo(content.elements),
       background: content.background,
     };
     return {

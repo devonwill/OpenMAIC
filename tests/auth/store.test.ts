@@ -78,7 +78,7 @@ describe('auth store', () => {
 
   it('updates profile fields', async () => {
     await createUser(pool, USER);
-    await updateUserProfile(pool, USER.id, { displayName: '王老师2', phone: '13900139000' });
+    await updateUserProfile(pool, USER.id, { displayName: '王老师2', phone: '13900139000', avatar: null });
     const found = await getUserByEmail(pool, USER.email);
     expect(found?.displayName).toBe('王老师2');
     expect(found?.phone).toBe('13900139000');

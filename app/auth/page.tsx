@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/lib/hooks/use-i18n';
 import { useAuth } from '@/lib/hooks/use-auth';
-import { SettingsDialog } from '@/components/settings';
 import { cn } from '@/lib/utils';
 
 type Mode = 'login' | 'register';
@@ -24,10 +23,6 @@ export default function AuthPage() {
   const [inviteCode, setInviteCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [teacherGuide, setTeacherGuide] = useState(false);
-  // SettingsDialog 是受控组件（只接受 open/onOpenChange，不接受 children），
-  // 因此用本地 open 状态配合按钮触发，而非把触发按钮包进 Dialog。
-  const [settingsOpen, setSettingsOpen] = useState(false);
 
   // 按实际错误码 + HTTP 状态映射用户可读文案。
   // 后端错误码取值见 lib/server/api-response.ts：
@@ -79,10 +74,9 @@ export default function AuthPage() {
         return;
       }
       await refresh();
-      if (mode === 'register' && role === 'teacher') {
-        setTeacherGuide(true); // 注册后引导教师配置大模型（spec Q8）
-        return;
-      }
+      // 教师注册后直接回到首页，不在注册页停留做"配置大模型"引导——
+      // 教师会在首次使用生成/工作台等依赖大模型的功能时，由 onFeatureUsed
+      // 拦截器弹出系统设置对话框（延迟引导比注册时打断更友好）。
       router.push('/');
     } catch {
       setError(t('auth.errorNetwork'));
@@ -118,21 +112,8 @@ export default function AuthPage() {
           ))}
         </div>
 
-        {teacherGuide ? (
-          <div className="text-center space-y-4 py-8">
-            <p className="text-sm text-gray-700 dark:text-gray-300">{t('auth.teacherGuide')}</p>
-            <button
-              type="button"
-              onClick={() => setSettingsOpen(true)}
-              className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm"
-            >
-              {t('auth.openSettings')}
-            </button>
-            <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
-          </div>
-        ) : (
-          <form onSubmit={submit} className="space-y-4">
-            {mode === 'register' && (
+        <form onSubmit={submit} className="space-y-4">
+          {mode === 'register' && (
               <>
                 <div className="grid grid-cols-2 gap-2">
                   {(['student', 'teacher'] as const).map((r) => (
@@ -245,7 +226,6 @@ export default function AuthPage() {
               {loading ? '…' : t(mode === 'login' ? 'auth.loginButton' : 'auth.registerButton')}
             </button>
           </form>
-        )}
 
         <div className="mt-6 text-center space-y-1">
           {mode === 'login' ? (

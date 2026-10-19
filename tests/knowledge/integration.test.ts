@@ -38,6 +38,7 @@ const fixture = (status: KnowledgeBundle['reviewStatus'] = 'reviewed'): Knowledg
     },
   ],
   links: [{ source: 'frame', target: 'fk', relation: '相关知识' }],
+  crossRefs: [],
 });
 const directories: string[] = [];
 async function setup(bundle = fixture()) {
@@ -62,6 +63,21 @@ describe('knowledge integration', () => {
     expect(searchKnowledge([fixture()], 'explain forward kinematics')[0].node.id).toBe('fk');
     expect(searchKnowledge([fixture()], '宇宙射线')).toEqual([]);
     expect(formatKnowledgeEvidence(hits)).toContain('[知识来源:robotics/fk]');
+  });
+  it('expands 1-hop graph neighbors for matched nodes without duplicating hits', () => {
+    const hits = searchKnowledge([fixture()], '请解释正运动学与关节角的关系');
+    expect(hits).toHaveLength(1);
+    expect(hits[0].neighbors).toHaveLength(1);
+    expect(hits[0].neighbors![0]).toMatchObject({
+      id: 'frame',
+      name: '坐标变换',
+      relation: '相关知识',
+      content: '转换参考坐标系。',
+    });
+    const evidence = formatKnowledgeEvidence(hits);
+    // 邻居带可校验的 citation，供生成侧直接引用。
+    expect(evidence).toContain('"neighbors"');
+    expect(evidence).toContain('[知识来源:robotics/frame]');
   });
   it('enriches the last user turn without changing saved conversation history', async () => {
     await setup();
@@ -93,6 +109,22 @@ describe('knowledge integration', () => {
       await writeFile(path.join(directory, 'robotics.json'), JSON.stringify(fixture(status)));
       expect(await getClassroomKnowledge('正运动学')).toBe('');
     }
+  });
+  it('falls back to selected bundle overviews when the query has no keyword overlap', async () => {
+    await setup();
+    vi.stubEnv('KNOWLEDGE_CLASSROOM_ENABLED', 'true');
+    // No selection + zero-hit query → nothing is injected (unchanged behaviour).
+    expect(await getClassroomKnowledge('宇宙射线暴')).toBe('');
+    // Explicit selection + zero-hit query → overview evidence from the chosen
+    // bundle, so checked libraries are never silently ignored.
+    const scoped = await getClassroomKnowledge('宇宙射线暴', { bundleIds: ['robotics'] });
+    expect(scoped).toContain('[知识来源:robotics/');
+    // The most connected node (fk, degree 1 tie broken by id) comes first.
+    expect(scoped).toContain('正运动学');
+    // Unreviewed selections never leak into the fallback either.
+    const directory = process.env.KNOWLEDGE_DATA_DIR!;
+    await writeFile(path.join(directory, 'robotics.json'), JSON.stringify(fixture('unreviewed')));
+    expect(await getClassroomKnowledge('宇宙射线暴', { bundleIds: ['robotics'] })).toBe('');
   });
   it('skips corrupt packages without breaking valid knowledge or the classroom', async () => {
     const directory = await setup();

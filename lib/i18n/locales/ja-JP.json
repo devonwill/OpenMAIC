@@ -45,7 +45,10 @@
   },
   "home": {
     "slogan": "マルチエージェント対話型教室で生成的に学ぶ",
-    "greetingWithName": "こんにちは、{{name}}さん"
+    "greetingWithName": "こんにちは、{{name}}さん",
+    "setupLLMFirst": "Please configure a large-model provider in System Settings before using {{feature}}.",
+    "workbenchEntry": "Workbench",
+    "enterClassroom": "classroom generation"
   },
   "toolbar": {
     "pdfParser": "パーサー",
@@ -563,6 +566,8 @@
       "title": "ナレーション台本",
       "regenAllTts": "すべての音声を再生成",
       "voiceAll": "全音声生成",
+      "cloneVoiceSelect": "クリオン音色を選択し、「全音声生成」でその音色で再合成",
+      "cloneVoiceDefault": "デフォルト音色",
       "counts": "{{speech}} ナレーション · {{cue}} アクション",
       "panLeft": "左にスクロール",
       "panRight": "右にスクロール",
@@ -1167,6 +1172,12 @@
     "webSearching": "ウェブ検索",
     "webSearchingDesc": "ウェブで最新情報を検索しています",
     "webSearchFailed": "ウェブ検索に失敗しました",
+    "citationsTitle": "このページの引用",
+    "citationsValid": "{{count}} 件検証済み",
+    "citationsInvalid": "{{count}} 件無効",
+    "citationReasonNotFound": "知識ベースに存在しません（モデルの捏造の可能性）",
+    "citationReasonNotReviewed": "ソースライブラリが未承認",
+    "citationReasonOutOfScope": "チェックした知識ライブラリの範囲外",
     "outlinesReadyCount": "{{ready}} / {{total}} セクション準備完了",
     "jumpToBlankTitle": "タイトルが未入力のセクションへ移動",
     "analyzingMediaMaterial": "音声・動画を解析中"
@@ -1905,7 +1916,7 @@
       "download": "ダウンロード",
       "detailFailed": "スキル詳細を読み込めませんでした",
       "contentLabel": "内容",
-      "builtinDetailNote": "このスキルは OpenMAIC に同梱されています。他のエージェントワークスペースにインポートするにはダウンロードしてください。",
+      "builtinDetailNote": "このスキルは OpenRobotics に同梱されています。他のエージェントワークスペースにインポートするにはダウンロードしてください。",
       "upload": "アップロード",
       "uploading": "アップロード中…",
       "uploadFailed": "スキルをアップロードできませんでした。ファイルを確認して再試行してください。",
@@ -2062,7 +2073,26 @@
     "badgeEnter": "Pro モード",
     "badgeExit": "通常モードに戻る",
     "launchPlaceholder": "作りたい学習体験を描いてください",
-    "launchSend": "構築を開始"
+    "launchSend": "構築を開始",
+    "config": "クイック設定",
+    "configModel": "モデル",
+    "configModelScope": "シーン生成・会話セッション・クイズに適用されます。ワークベンチの返信モデルはサーバー側で固定されています。",
+    "configNoModelProvider": "設定済みのモデルプロバイダーがありません。設定で追加してください。",
+    "configVoice": "音声",
+    "knowledge": "ナレッジベース",
+    "knowledgeLoading": "読み込み中…",
+    "knowledgeLoadFailed": "読み込みに失敗しました。先に知識ページでデータを有効化してください。",
+    "knowledgeEmpty": "審査済みのナレッジベースがありません。知識ページでアップロードして審査してください。",
+    "knowledgeKindCode": "コード",
+    "knowledgeKindGraph": "グラフ",
+    "knowledgeKindPaper": "論文",
+    "knowledgeQuota": "引用クォータ（根拠の比率）",
+    "knowledgeQuotaSummary": "ローカル {{local}}% · ウェブ {{web}}% · モデル {{model}}%",
+    "knowledgeQuotaLocal": "ローカル",
+    "knowledgeQuotaWeb": "ウェブ",
+    "configCloneUse": "すべての AI 講師で私のクローン音声を使用",
+    "configCloneSelect": "クローン音声を選択",
+    "configCloneEmpty": "クローン音声が未登録です。先に音声設定で登録してください"
   },
   "workbench": {
     "tool": {

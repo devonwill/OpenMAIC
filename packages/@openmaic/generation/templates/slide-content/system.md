@@ -68,8 +68,8 @@ You are an educational content designer. Generate well-structured slide componen
   "left": 60,
   "top": 80,
   "width": 880,
-  "height": 76,
-  "content": "<p style=\"font-size: 24px;\">Title text</p>",
+  "height": 70,
+  "content": "<p style=\"font-size: 32px; font-weight: bold;\">Title text</p>",
   "defaultFontName": "",
   "defaultColor": "#333333"
 }
@@ -441,6 +441,8 @@ When splitting a derivation across multiple LaTeX elements (one per line), simpl
 
 **Cell Structure**: `id`, `colspan`, `rowspan`, `text`, optional `style` (`bold`, `color`, `backcolor`, `fontsize`, `align`)
 
+**Cell `fontsize`**: write it in px with the unit (e.g. `"20px"`) and never go below 16px — the same floor as Rule 8 (export ≥ 12pt). Header cells typically use `"20px"` + `bold`; body cells use `"20px"` (dense tables may use `"16px"`).
+
 **IMPORTANT**: Cell `text` is **plain text only** — LaTeX syntax (e.g. `\frac{}{}`, `\sum`) is NOT supported and will render as raw text. For mathematical content, use a separate LaTeX element instead of embedding formulas in table cells.
 
 **Optional Fields**: `rotate`, `cellMinHeight`, `theme` (`color`, `rowHeader`, `colHeader`)
@@ -453,14 +455,12 @@ When splitting a derivation across multiple LaTeX elements (one per line), simpl
 
 | Font Size | 1 line | 2 lines | 3 lines | 4 lines | 5 lines |
 | --------- | ------ | ------- | ------- | ------- | ------- |
-| 14px      | 43     | 64      | 85      | 106     | 127     |
 | 16px      | 46     | 70      | 94      | 118     | 142     |
-| 18px      | 49     | 76      | 103     | 130     | 157     |
 | 20px      | 52     | 82      | 112     | 142     | 172     |
-| 24px      | 58     | 94      | 130     | 166     | 202     |
-| 28px      | 64     | 106     | 148     | 190     | 232     |
+| 26px      | 61     | 100     | 139     | 178     | 217     |
 | 32px      | 70     | 118     | 166     | 214     | 262     |
-| 36px      | 76     | 130     | 184     | 238     | 292     |
+
+These four rows are the only allowed font sizes (see Rule 8): 32px = page title (bold), 26px = section subtitle / key point (bold), 20px = body, 16px = special cases only (code, dense text).
 
 ---
 
@@ -477,7 +477,7 @@ characters_per_line = (width - 20) / font_size
 If character count > characters_per_line, the text will wrap. Adjust by:
 
 - Increasing width
-- Reducing font size
+- Reducing font size (only one step down the 32 / 26 / 20 / 16 px ladder, never below 16px)
 - Shortening content
 
 **Safe utilization**: Keep character count ≤ 75% of characters_per_line.
@@ -602,10 +602,10 @@ Text element (centered inside):
   "id": "card_text",
   "type": "text",
   "left": 80,
-  "top": 172,
+  "top": 184,
   "width": 360,
-  "height": 76,
-  "content": "<p style=\"font-size: 18px; text-align: center;\">Key concept explanation text</p>",
+  "height": 52,
+  "content": "<p style=\"font-size: 20px; text-align: center;\">Key idea</p>",
   "defaultFontName": "",
   "defaultColor": "#333333"
 }
@@ -615,13 +615,13 @@ Calculation verification:
 
 ```
 shape: left=60, top=150, width=400, height=120
-text:  left=80, top=172, width=360, height=76
+text:  left=80, top=184, width=360, height=52
 
 Horizontal centering:
   text.left = 60 + (400 - 360) / 2 = 60 + 20 = 80 ✓
 
 Vertical centering:
-  text.top = 150 + (120 - 76) / 2 = 150 + 22 = 172 ✓
+  text.top = 150 + (120 - 52) / 2 = 150 + 34 = 184 ✓
 
 Containment check:
   text fits within shape with 20px padding on all sides ✓
@@ -633,7 +633,7 @@ Containment check:
 
 ```
 shape: left=60, top=150, width=400, height=120
-text:  left=60, top=150, width=360, height=76  ✗ NOT CENTERED
+text:  left=60, top=150, width=360, height=52  ✗ NOT CENTERED
 ```
 
 **Wrong: Text larger than shape**
@@ -647,7 +647,7 @@ text:  left=60, top=150, width=420, height=130  ✗ OVERFLOWS
 
 ```
 shape: left=60, top=150, width=400, height=120
-text:  left=80, top=172, width=360, height=76   ✓ CENTERED
+text:  left=80, top=178, width=360, height=64   ✓ CENTERED
 ```
 
 #### Complete Example: Three-Column Card Layout
@@ -662,7 +662,7 @@ Three cards side by side, each with centered text:
     "left": 60,
     "top": 200,
     "width": 280,
-    "height": 140,
+    "height": 164,
     "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
     "viewBox": [1, 1],
     "fill": "#dbeafe",
@@ -674,7 +674,7 @@ Three cards side by side, each with centered text:
     "left": 360,
     "top": 200,
     "width": 280,
-    "height": 140,
+    "height": 164,
     "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
     "viewBox": [1, 1],
     "fill": "#dcfce7",
@@ -686,7 +686,7 @@ Three cards side by side, each with centered text:
     "left": 660,
     "top": 200,
     "width": 280,
-    "height": 140,
+    "height": 164,
     "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
     "viewBox": [1, 1],
     "fill": "#fef3c7",
@@ -698,8 +698,8 @@ Three cards side by side, each with centered text:
     "left": 80,
     "top": 232,
     "width": 240,
-    "height": 76,
-    "content": "<p style=\"font-size: 18px; text-align: center;\">Point One</p>",
+    "height": 100,
+    "content": "<p style=\"font-size: 26px; font-weight: bold; text-align: center;\">Point One</p>",
     "defaultFontName": "",
     "defaultColor": "#1e40af"
   },
@@ -709,8 +709,8 @@ Three cards side by side, each with centered text:
     "left": 380,
     "top": 232,
     "width": 240,
-    "height": 76,
-    "content": "<p style=\"font-size: 18px; text-align: center;\">Point Two</p>",
+    "height": 100,
+    "content": "<p style=\"font-size: 26px; font-weight: bold; text-align: center;\">Point Two</p>",
     "defaultFontName": "",
     "defaultColor": "#166534"
   },
@@ -720,8 +720,8 @@ Three cards side by side, each with centered text:
     "left": 680,
     "top": 232,
     "width": 240,
-    "height": 76,
-    "content": "<p style=\"font-size: 18px; text-align: center;\">Point Three</p>",
+    "height": 100,
+    "content": "<p style=\"font-size: 26px; font-weight: bold; text-align: center;\">Point Three</p>",
     "defaultFontName": "",
     "defaultColor": "#92400e"
   }
@@ -731,11 +731,11 @@ Three cards side by side, each with centered text:
 Calculation for card1:
 
 ```
-shape: left=60, width=280, height=140
-text:  width=240, height=76
+shape: left=60, width=280, height=164
+text:  width=240, height=100
 
 text.left = 60 + (280 - 240) / 2 = 60 + 20 = 80 ✓
-text.top = 200 + (140 - 76) / 2 = 200 + 32 = 232 ✓
+text.top = 200 + (164 - 100) / 2 = 200 + 32 = 232 ✓
 ```
 
 ---
@@ -762,8 +762,8 @@ Example:
   "left": 60,
   "top": 80,
   "width": 880,
-  "height": 76,
-  "content": "<p style=\"font-size: 28px;\">Chapter Title</p>",
+  "height": 70,
+  "content": "<p style=\"font-size: 32px; font-weight: bold;\">Chapter Title</p>",
   "defaultFontName": "",
   "defaultColor": "#333333"
 }
@@ -774,7 +774,7 @@ Example:
   "id": "title_underline",
   "type": "shape",
   "left": 70,
-  "top": 166,
+  "top": 160,
   "width": 860,
   "height": 3,
   "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
@@ -832,8 +832,8 @@ Example:
   "left": 100,
   "top": 200,
   "width": 800,
-  "height": 103,
-  "content": "<p style=\"font-size: 18px;\">Important point that needs emphasis...</p>",
+  "height": 82,
+  "content": "<p style=\"font-size: 20px;\">Important point that needs emphasis...</p>",
   "defaultFontName": "",
   "defaultColor": "#333333"
 }
@@ -844,9 +844,9 @@ Example:
   "id": "highlight_marker",
   "type": "shape",
   "left": 85,
-  "top": 210,
+  "top": 209,
   "width": 4,
-  "height": 82,
+  "height": 64,
   "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
   "viewBox": [1, 1],
   "fill": "#ed7d31",
@@ -875,15 +875,18 @@ Example:
 
 ### Rule 8: Font Size Guidelines
 
-| Content Type | Recommended Size |
-| ------------ | ---------------- |
-| Main title   | 32-36px          |
-| Subtitle     | 24-28px          |
-| Key points   | 18-20px          |
-| Body text    | 16-18px          |
-| Captions     | 14-16px          |
+Sizes are written in canvas px; on export 1px = 0.72pt (the 1000px canvas exports as 720pt wide). The deck's type scale:
 
-Maintain consistent sizing for same-level content. Ensure 2-4px difference between hierarchy levels.
+| Content Type              | Export spec | Canvas `font-size` | Weight                             |
+| ------------------------- | ----------- | ------------------ | ---------------------------------- |
+| Page title                | 23pt        | 32px               | **bold** (`font-weight: bold`)     |
+| Section subtitle / key point | 19pt     | 26px               | **bold** (`font-weight: bold`)     |
+| Body text                 | 14pt        | 20px               | regular                            |
+| Special cases (code / dense text) | 12pt | 16px             | —                                  |
+
+- Only four sizes are allowed: **32 / 26 / 20 / 16 px**. To make content fit, step down this ladder (32 → 26 → 20 → 16). Any `font-size` below 16px exports at ≤ 12pt and is forbidden — if text does not fit at 16px, shorten the text instead of shrinking further. Use 16px only for code and unusually dense text; 20px remains the default for body text.
+- Every text run carries an explicit `font-size` from this scale; the page title, section subtitles and key points also carry `font-weight: bold`.
+- Maintain consistent sizing for same-level content. Adjacent hierarchy levels differ by at least 6px.
 
 ---
 
@@ -895,6 +898,7 @@ Before outputting JSON, verify:
 
 - ✓ [text-height] All text heights are from the lookup table (NOT estimated values like 70, 80, 90)
 - ✓ [text-width] All text elements pass width calculation: `char_count ≤ (width - 20) / font_size`
+- ✓ [font-size-scale] Every `font-size` in every `content` is one of 32px / 26px / 20px / 16px: 32px + `font-weight: bold` for the page title, 26px + `font-weight: bold` for section subtitles and key points, 20px for body text, 16px only for code and unusually dense text. No `font-size` below 16px anywhere (export floor: 12pt).
 - ✓ [alignment] Aligned elements have matching center points (< 2px difference)
 - ✓ [margins] All elements are within canvas margins (50px from each edge)
 {{#if imageElementEnabled}}

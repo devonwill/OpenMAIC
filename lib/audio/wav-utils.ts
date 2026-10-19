@@ -73,11 +73,23 @@ export async function audioBlobToWav(blob: Blob): Promise<Blob> {
   }
 }
 
+/**
+ * Providers whose transcription endpoints accept WAV but not the browser's
+ * native MediaRecorder container (audio/webm;codecs=opus). For these the
+ * recording is decoded and re-encoded as mono PCM WAV before upload.
+ *
+ * xiaomi-asr is included: its /chat/completions route carries the clip as an
+ * `input_audio` data URL with a hard-coded `audio/wav` MIME label and rejects
+ * webm bytes with "invalid audio format, only mp3/flac/m4a/wav/ogg are
+ * supported" (verified against token-plan-cn.xiaomimimo.com, 2026-09).
+ */
+const WAV_ONLY_ASR_PROVIDERS = new Set(['lemonade-asr', 'funasr-asr', 'xiaomi-asr']);
+
 export async function normalizeASRUploadAudio(
   providerId: string,
   audioBlob: Blob,
 ): Promise<{ blob: Blob; fileName: string }> {
-  if (providerId !== 'lemonade-asr' && providerId !== 'funasr-asr') {
+  if (!WAV_ONLY_ASR_PROVIDERS.has(providerId)) {
     return { blob: audioBlob, fileName: 'recording.webm' };
   }
   return { blob: await audioBlobToWav(audioBlob), fileName: 'recording.wav' };

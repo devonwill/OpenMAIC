@@ -46,7 +46,7 @@ import { isTTSProviderEnabled } from '@/lib/audio/provider-enablement';
 const log = createLogger('Settings');
 
 /** Persisted-blob version for zustand's `persist` `migrate` ladder. */
-const SETTINGS_PERSIST_VERSION = 4;
+const SETTINGS_PERSIST_VERSION = 5;
 
 /**
  * Bound after the store exists; see `onWriteRefused` for why it is not inlined.
@@ -119,6 +119,14 @@ export interface SettingsState {
   ttsSpeed: number;
   asrProviderId: ASRProviderId;
   asrLanguage: string;
+
+  // Global clone-voice override: when on and the selected clone's provider is
+  // enabled, every AI teacher/narrator voice resolves to this clone voice.
+  // Client-side only — resolved {providerId, voiceId} is sent with generation
+  // requests like any other voice.
+  useMyCloneVoice: boolean;
+  myCloneVoiceId: string;
+  myCloneVoiceProvider: string;
 
   // Audio provider configurations
   ttsProvidersConfig: Record<
@@ -309,6 +317,12 @@ export interface SettingsState {
   // Audio actions
   setTTSProvider: (providerId: TTSProviderId) => void;
   setTTSVoice: (voice: string) => void;
+  /** Patch the global clone-voice override settings (switch + picked clone). */
+  setMyCloneVoice: (patch: {
+    useMyCloneVoice?: boolean;
+    myCloneVoiceId?: string;
+    myCloneVoiceProvider?: string;
+  }) => void;
   setTTSSpeed: (speed: number) => void;
   setASRProvider: (providerId: ASRProviderId) => void;
   setASRLanguage: (language: string) => void;
@@ -521,6 +535,13 @@ const getDefaultAudioConfig = () => ({
   ttsSpeed: 1.0,
   asrProviderId: 'browser-native' as ASRProviderId,
   asrLanguage: 'zh-CN',
+  // The user's registered clone voice is the default AI-teacher voice: the
+  // switch ships ON and CloneVoiceDefaultSync auto-picks the most recent
+  // clone profile. Without a registered voice the resolver returns null and
+  // playback falls back to the normal voice selection.
+  useMyCloneVoice: true,
+  myCloneVoiceId: '',
+  myCloneVoiceProvider: '',
   ttsProvidersConfig: {
     // Built-in providers default enabled:true — they only ever surface once
     // configured (API key or server-managed), so "enabled" is a user opt-OUT,
@@ -546,6 +567,7 @@ const getDefaultAudioConfig = () => ({
       modelId: 'kokoro-v1',
       enabled: true,
     },
+    'xiaomi-tts': { apiKey: '', baseUrl: '', modelId: 'mimo-v2.5-tts', enabled: true },
     // Browser-native is OFF by default — fully opt-in. Native voice quality is
     // poor; it must never be a silent default (#665).
     'browser-native-tts': { apiKey: '', baseUrl: '', enabled: false },
@@ -560,6 +582,7 @@ const getDefaultAudioConfig = () => ({
     'azure-asr': { apiKey: '', baseUrl: '', enabled: false },
     'funasr-asr': { apiKey: '', baseUrl: '', enabled: false },
     'lemonade-asr': { apiKey: '', baseUrl: '', enabled: false },
+    'xiaomi-asr': { apiKey: '', baseUrl: '', enabled: true },
   } as Record<ASRProviderId, { apiKey: string; baseUrl: string; enabled: boolean }>,
 });
 
@@ -1135,6 +1158,8 @@ export const useSettingsStore = create<SettingsState>()(
           })),
 
         setTTSSpeed: (speed) => set({ ttsSpeed: speed }),
+
+        setMyCloneVoice: (patch) => set(patch),
 
         // Reset language when switching providers, since language code formats differ
         // (e.g. browser-native uses BCP-47 "en-US", OpenAI Whisper uses ISO 639-1 "en")
@@ -2064,10 +2089,17 @@ export const useSettingsStore = create<SettingsState>()(
           }
         }
 
-        // Add default audio config if missing
+        // Add default audio config if missing. Only fill fields the blob does
+        // not carry: this branch runs on every version bump, so a partial
+        // snapshot (e.g. asr-only) must not have its selections reset to
+        // defaults along the way.
         if (!state.ttsProvidersConfig || !state.asrProvidersConfig) {
           const defaultAudioConfig = getDefaultAudioConfig();
-          Object.assign(state, defaultAudioConfig);
+          for (const [key, value] of Object.entries(defaultAudioConfig)) {
+            if ((state as Record<string, unknown>)[key] === undefined) {
+              (state as Record<string, unknown>)[key] = value;
+            }
+          }
         }
         ensureBuiltInAudioProviders(state);
         ensureBuiltInWebSearchProviders(state);
@@ -2236,6 +2268,14 @@ export const useSettingsStore = create<SettingsState>()(
             const cfg = state.ttsProvidersConfig[pid];
             if (cfg) cfg.enabled = pid !== 'browser-native-tts';
           }
+        }
+
+        // v4 → v5: the registered clone voice becomes the default AI-teacher
+        // voice. A persisted `useMyCloneVoice: false` predates that default
+        // and cannot be told apart from the old shipped-off default, so flip
+        // it on once here; any opt-out after v5 persists and sticks.
+        if (version < 5) {
+          state.useMyCloneVoice = true;
         }
 
         ensureValidProviderSelections(state);

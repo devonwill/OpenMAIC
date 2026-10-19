@@ -3,7 +3,10 @@
  * 用法：pnpm tsx scripts/reset-password.ts user@example.com newPassword123
  */
 import { Pool } from 'pg';
-import type { Queryable } from '@openmaic/storage/document/pg';
+import {
+  nodePostgresTransaction,
+  type ConnectableQueryable,
+} from '@openmaic/storage/server/reference';
 import { hashPassword } from '../lib/server/auth/password';
 import { getUserByEmail, updateUserPassword, ensureAuthSchema } from '../lib/server/auth/store';
 
@@ -12,20 +15,28 @@ import { getUserByEmail, updateUserPassword, ensureAuthSchema } from '../lib/ser
  * 返回 false 表示邮箱不存在——由调用方决定报错文案与退出码。
  */
 export async function resetPasswordForEmail(
-  queryable: Queryable, email: string, newPassword: string,
+  pool: ConnectableQueryable,
+  email: string,
+  newPassword: string,
 ): Promise<boolean> {
-  const user = await getUserByEmail(queryable, email);
-  if (!user) return false;
-  await updateUserPassword(queryable, user.id, await hashPassword(newPassword));
-  await queryable.query('DELETE FROM user_sessions WHERE user_id = $1', [user.id]);
-  return true;
+  if (newPassword.length < 8) throw new Error('password must be at least 8 characters');
+  const passwordHash = await hashPassword(newPassword);
+  return nodePostgresTransaction(pool)(async (queryable) => {
+    const user = await getUserByEmail(queryable, email);
+    if (!user) return false;
+    await updateUserPassword(queryable, user.id, passwordHash);
+    await queryable.query('DELETE FROM user_sessions WHERE user_id = $1', [user.id]);
+    return true;
+  });
 }
 
 async function main(): Promise<void> {
   const [email, newPassword] = process.argv.slice(2);
   const url = process.env.DATABASE_URL;
   if (!email || !newPassword || !url) {
-    process.stderr.write('usage: DATABASE_URL=... pnpm tsx scripts/reset-password.ts <email> <newPassword>\n');
+    process.stderr.write(
+      'usage: DATABASE_URL=... pnpm tsx scripts/reset-password.ts <email> <newPassword>\n',
+    );
     process.exitCode = 1;
     return;
   }
@@ -58,7 +69,9 @@ const isDirectRun =
 if (isDirectRun) {
   void main().catch((error: unknown) => {
     // 连库/更新失败不静默吞：打印原因并以非 0 退出，方便脚本化检测
-    process.stderr.write(`reset failed: ${error instanceof Error ? error.message : String(error)}\n`);
+    process.stderr.write(
+      `reset failed: ${error instanceof Error ? error.message : String(error)}\n`,
+    );
     process.exitCode = 1;
   });
 }

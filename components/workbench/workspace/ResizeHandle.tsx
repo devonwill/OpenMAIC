@@ -1,3 +1,10 @@
+/**
+ * 本文件：面板接缝处的拖拽调宽把手。
+ * 职责：6px 抓取条，拖动实时预览宽度、松手提交、双击复位。
+ * 关键点：把手不再承载折叠（折叠已移入各面板头部）；活跃态读自身
+ * data-ws-drag 而非全局 data-ws-resizing，避免同页多个接缝同时点亮；
+ * 指针捕获保证快速拖动不丢跟踪，按下未移动不算调整。
+ */
 'use client';
 
 /**
@@ -32,6 +39,7 @@
 import { useRef } from 'react';
 import { cn } from '@/lib/utils/cn';
 
+// 预览态只改内存中的 latest，松手才 commit，避免拖动期间反复写布局。
 export function ResizeHandle({
   testId,
   label,
@@ -81,8 +89,10 @@ export function ResizeHandle({
     const drag = dragRef.current;
     if (!drag) return;
     if (Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) >= 3) {
+      // 3px 阈值区分「点击」与「拖拽」，微抖动不触发调整。
       drag.moved = true;
     }
+    // 左右边缘的位移方向相反：右缘向右拖变宽，左缘向左拖变宽。
     const delta = edge === 'right' ? event.clientX - drag.startX : drag.startX - event.clientX;
     drag.latest = clamp(drag.startWidth + delta);
     onPreview(drag.latest);

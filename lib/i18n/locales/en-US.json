@@ -33,6 +33,35 @@
     "errorServer": "Service temporarily unavailable — please try again later",
     "errorNetwork": "Network error — please check your connection"
   },
+  "userMenu": {
+    "profile": "Profile",
+    "modelSettings": "Model settings",
+    "logout": "Log out"
+  },
+  "profileDialog": {
+    "title": "Profile",
+    "tabProfile": "Profile",
+    "tabPassword": "Password",
+    "uploadAvatar": "Upload / take photo",
+    "resetAvatar": "Reset",
+    "avatarHint": "Pick a local image or take a photo (≤ 200KB), or choose a cartoon avatar below",
+    "avatarTypeError": "Only image files are supported",
+    "avatarSizeError": "Image must be ≤ 200KB",
+    "avatarReadError": "Failed to read the image",
+    "presetAvatars": "Cartoon avatars",
+    "displayNameError": "Display name must be 1 to {{max}} characters",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmNewPassword": "Confirm new password",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "updatePassword": "Update password",
+    "passwordLengthError": "Password must be {{min}} to {{max}} characters",
+    "passwordSameError": "New password must differ from current password",
+    "passwordSuccess": "Password updated",
+    "saveSuccess": "Saved",
+    "saveFailed": "Save failed, please try again"
+  },
   "common": {
     "you": "You",
     "confirm": "Confirm",
@@ -41,11 +70,15 @@
     "errorPrefix": "Error: ",
     "loadingClassroom": "Loading classroom...",
     "retry": "Retry",
-    "close": "Close"
+    "close": "Close",
+    "save": "Save"
   },
   "home": {
     "slogan": "Generative Learning in Multi-Agent Interactive Classroom",
-    "greetingWithName": "Hi, {{name}}"
+    "greetingWithName": "Hi, {{name}}",
+    "setupLLMFirst": "Configure a large-model provider in System Settings before using {{feature}}.",
+    "workbenchEntry": "Workbench",
+    "enterClassroom": "classroom generation"
   },
   "toolbar": {
     "pdfParser": "Parser",
@@ -563,6 +596,8 @@
       "title": "Narration script",
       "regenAllTts": "Regenerate all voiceover",
       "voiceAll": "Voice all",
+      "cloneVoiceSelect": "Pick a clone voice — “Voice all” re-voices every line with it",
+      "cloneVoiceDefault": "Default voice",
       "counts": "{{speech}} narration · {{cue}} cues",
       "panLeft": "Pan left",
       "panRight": "Pan right",
@@ -1167,6 +1202,12 @@
     "webSearching": "Web Search",
     "webSearchingDesc": "Searching the web for up-to-date information",
     "webSearchFailed": "Web search failed",
+    "citationsTitle": "Citations on this page",
+    "citationsValid": "{{count}} verified",
+    "citationsInvalid": "{{count}} invalid",
+    "citationReasonNotFound": "Not found in the knowledge base (likely fabricated)",
+    "citationReasonNotReviewed": "Source library not reviewed",
+    "citationReasonOutOfScope": "Outside the checked knowledge libraries",
     "outlinesReadyCount": "{{ready}} / {{total}} sections ready",
     "jumpToBlankTitle": "Jump to a section that still needs a title",
     "analyzingMediaMaterial": "Analyzing audio/video"
@@ -1905,7 +1946,7 @@
       "download": "Download",
       "detailFailed": "Could not load the skill details",
       "contentLabel": "Content",
-      "builtinDetailNote": "This skill ships with OpenMAIC. Download it to import into another agent workspace.",
+      "builtinDetailNote": "This skill ships with OpenRobotics. Download it to import into another agent workspace.",
       "upload": "Upload",
       "uploading": "Uploading…",
       "uploadFailed": "Could not upload the skill. Check the file and try again.",
@@ -2057,7 +2098,26 @@
     "badgeEnter": "Pro mode",
     "badgeExit": "Back to classic",
     "launchPlaceholder": "Describe the learning experience you want to create",
-    "launchSend": "Start build"
+    "launchSend": "Start build",
+    "config": "Quick settings",
+    "configModel": "Model",
+    "configModelScope": "Applies to scene generation, chat sessions and quizzes; the workbench reply model is fixed server-side.",
+    "configNoModelProvider": "No configured model providers — add one in Settings.",
+    "configVoice": "Voice",
+    "knowledge": "Knowledge",
+    "knowledgeLoading": "Loading…",
+    "knowledgeLoadFailed": "Loading failed — enable the data on the Knowledge page first.",
+    "knowledgeEmpty": "No reviewed knowledge bases yet — upload and review one on the Knowledge page.",
+    "knowledgeKindCode": "Code",
+    "knowledgeKindGraph": "Graph",
+    "knowledgeKindPaper": "Paper",
+    "knowledgeQuota": "Citation quota (evidence share)",
+    "knowledgeQuotaSummary": "Local {{local}}% · Web {{web}}% · Model {{model}}%",
+    "knowledgeQuotaLocal": "Local",
+    "knowledgeQuotaWeb": "Web",
+    "configCloneUse": "Use my clone voice for every AI teacher",
+    "configCloneSelect": "Select clone voice",
+    "configCloneEmpty": "No clone voice registered yet — register one in voice settings first"
   },
   "accessCode": {
     "title": "Enter Access Code",

@@ -1,3 +1,10 @@
+/**
+ * 本文件：旁白时间轴组件（EditDock 的主体）。
+ * 职责：把场景 actions 渲染为横向胶片条，支持旁白台词就地编辑、拖拽重排、
+ * 插入/删除动作、元素绑定提示的悬停预览与画布拾取、TTS 配音与试听。
+ * 关键点：所有编辑经 actions-edit 纯函数 + commit() 基于 store 最新值提交，
+ * 写入由上层 store 统一持久化；折叠态由 useEditDock 共享状态驱动。
+ */
 'use client';
 
 /**
@@ -93,6 +100,9 @@ import {
   resolveLegacySpeechAudioId,
   resolveSpeechAudioId,
 } from '@/lib/audio/regenerate-speech-tts';
+import { toCloneVoiceOptions, useAllVoiceProfiles } from '@/lib/audio/voxcpm-voices';
+import { getEnabledProvidersWithVoices, type ResolvedVoice } from '@/lib/audio/voice-resolver';
+import type { TTSProviderId } from '@/lib/audio/types';
 import { useMayGenerateForStage } from '@/lib/classroom/generation-permission';
 
 const EMPTY: Action[] = [];
@@ -135,6 +145,13 @@ const AXIS_FROM_TOP = 20; // px from track top to the axis center (nodes hang be
 // Radix Select forbids an empty-string item value, so the discussion's
 // "unspecified agent" choice rides a sentinel that maps back to '' on change.
 const DISCUSSION_AGENT_NONE = '__none__';
+
+// 同一原因的第二个哨兵：克隆音色选择器的「默认音色」项。选中它时
+// overrideVoice 为空，「全部配音」沿用 narrator binding / 全局音色解析。
+const CLONE_VOICE_DEFAULT = '__default__';
+
+/** 克隆音色选项的 value 编码：provider 与 voice id 拼接，避免跨 provider 同 id 冲突。 */
+const cloneVoiceValue = (providerId: string, voiceId: string) => `${providerId}::${voiceId}`;
 
 type DragPayload = { kind: 'move'; id: string };
 
@@ -273,6 +290,7 @@ type TtsStatus = 'none' | 'ready' | 'generating' | 'error';
 type PreviewPhase = 'idle' | 'loading' | 'playing';
 
 /** Audio status + preview / regenerate row, shown when managed TTS is on. */
+/** 单条旁白的 TTS 状态行：展示可用/生成中状态与试听、重新配音按钮。 */
 export function SpeechTtsBar({
   actionId,
   audioId,
@@ -598,7 +616,7 @@ function SpeechClip({
   return (
     <div
       className={cn(
-        'group/clip relative flex h-full w-[228px] shrink-0 flex-col overflow-hidden rounded-xl border border-border/85 bg-white/75 shadow-sm transition-colors focus-within:border-violet-400 hover:border-violet-300/70 dark:bg-slate-800/50 dark:hover:border-violet-500/40',
+        'group/clip relative flex h-full w-[228px] shrink-0 flex-col overflow-hidden rounded-xl border border-border/85 bg-white/75 shadow-sm transition-colors focus-within:border-blue-400 hover:border-blue-300/70 dark:bg-slate-800/50 dark:hover:border-blue-500/40',
         needsText && INCOMPLETE_CLIP,
       )}
     >
@@ -858,7 +876,7 @@ function CueMarker({
       className={cn(
         'group/cue relative flex h-full w-[108px] shrink-0 flex-col overflow-hidden rounded-xl border border-gray-200/80 bg-white/65 shadow-sm transition-colors dark:border-gray-700/60 dark:bg-slate-800/40',
         bound
-          ? 'cursor-pointer hover:border-violet-300/70 dark:hover:border-violet-500/40'
+          ? 'cursor-pointer hover:border-blue-300/70 dark:hover:border-blue-500/40'
           : 'cursor-grab active:cursor-grabbing',
         needsTarget && cn('border-dashed', m.dash),
       )}
@@ -1033,6 +1051,7 @@ function DropZone({
   );
 }
 
+// 时间轴主体：读场景 actions 并负责全部编辑交互与持久化提交。
 export function ActionsBar({ sceneId }: { sceneId: string }) {
   const { t } = useI18n();
   const scene = useStageStore((s) => s.scenes.find((x) => x.id === sceneId));
@@ -1061,6 +1080,26 @@ export function ActionsBar({ sceneId }: { sceneId: string }) {
     (s) => s.ttsEnabled && s.ttsProviderId !== 'browser-native-tts',
   );
   const mayGenerate = useMayGenerateForStage(useStageStore((s) => s.stage?.id));
+
+  // —— 「全部配音」右侧的克隆音色选择（按所选音色重新配音）——
+  // 选项来自本地 + 服务端注册的 clone 音色档案（/api/generate/voice 清单已并入
+  // useAllVoiceProfiles），并按「所属 provider 已启用」过滤：否则选中后
+  // 逐句生成会因 provider 未配置整批静默失败（regenerateSpeechAudio 内 catch 跳过）。
+  const { profiles: voiceProfiles } = useAllVoiceProfiles();
+  const ttsProvidersConfig = useSettingsStore((s) => s.ttsProvidersConfig);
+  const cloneVoiceOptions = useMemo(() => {
+    const enabledIds = new Set<string>(
+      getEnabledProvidersWithVoices(ttsProvidersConfig, voiceProfiles).map((p) => p.providerId),
+    );
+    return toCloneVoiceOptions(voiceProfiles).filter((o) => enabledIds.has(o.providerId));
+  }, [ttsProvidersConfig, voiceProfiles]);
+  // 选中的克隆音色 → ResolvedVoice；「默认音色」哨兵 → 不传 overrideVoice，
+  // generateAndStoreTTS 保持原有音色优先级（narrator binding / 全局克隆覆盖）。
+  const [cloneVoicePick, setCloneVoicePick] = useState(CLONE_VOICE_DEFAULT);
+  const selectedCloneVoice = useMemo<ResolvedVoice | null>(() => {
+    const opt = cloneVoiceOptions.find((o) => cloneVoiceValue(o.providerId, o.id) === cloneVoicePick);
+    return opt ? { providerId: opt.providerId as TTSProviderId, voiceId: opt.id } : null;
+  }, [cloneVoiceOptions, cloneVoicePick]);
 
   // Agents a discussion can be initiated by — sourced from the user's currently
   // SELECTED agents, the exact set the playback engine gates on: it skips (and
@@ -1099,6 +1138,8 @@ export function ActionsBar({ sceneId }: { sceneId: string }) {
   // Apply an edit to the LATEST actions from the store (not the render-time
   // snapshot), so a concurrent agent/TTS update isn't reverted by a later UI
   // commit (drag / reorder / blur / delete).
+  // 以 store 中最新的 actions 为基准应用编辑（而非渲染时快照），
+  // 避免 UI 提交覆盖并发的智能体/TTS 更新。
   const commit = useCallback(
     (updater: (cur: Action[]) => Action[]) => {
       const cur = useStageStore.getState().scenes.find((s) => s.id === sceneId)?.actions ?? [];
@@ -1139,6 +1180,9 @@ export function ActionsBar({ sceneId }: { sceneId: string }) {
               audioId: previousAudioId,
             },
             language,
+            undefined,
+            // 选择了克隆音色则整批按该音色重新配音；未选（哨兵）则不传，走原逻辑
+            selectedCloneVoice ?? undefined,
           );
           if (id) {
             commit((cur) => setAudioIdById(cur, liveAction.id!, id));
@@ -1156,7 +1200,7 @@ export function ActionsBar({ sceneId }: { sceneId: string }) {
       // batchPending flag) instead of getting stuck in the generating state.
       setTtsRefresh((n) => n + 1);
     }
-  }, [regenAll, sceneId, language, commit]);
+  }, [regenAll, sceneId, language, selectedCloneVoice, commit]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const panViewport = (dir: -1 | 1) =>
@@ -1251,6 +1295,37 @@ export function ActionsBar({ sceneId }: { sceneId: string }) {
           <RefreshCw className={cn('size-3', regenAll && 'animate-spin')} />
           {t('edit.timeline.voiceAll')}
         </button>
+      )}
+
+      {/* 克隆音色选择器：选中后点「全部配音」即按该音色整批重新配音。
+          没有已注册的克隆音色时整个控件不渲染，避免出现空选择器。 */}
+      {!lineMode && ttsActive && mayGenerate && cloneVoiceOptions.length > 0 && (
+        <Select value={cloneVoicePick} onValueChange={setCloneVoicePick}>
+          <SelectTrigger
+            size="sm"
+            title={t('edit.timeline.cloneVoiceSelect')}
+            aria-label={t('edit.timeline.cloneVoiceSelect')}
+            className="h-6 max-w-[170px] gap-1 rounded-full border border-border bg-muted/40 px-2 py-0 text-[11px] text-muted-foreground shadow-none transition-colors hover:border-primary/30 hover:text-foreground focus-visible:ring-primary/30 [&_svg]:size-3"
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="max-h-56">
+            <SelectItem value={CLONE_VOICE_DEFAULT} className="text-[11px]">
+              <span className="text-muted-foreground">{t('edit.timeline.cloneVoiceDefault')}</span>
+            </SelectItem>
+            {cloneVoiceOptions.map((o) => (
+              <SelectItem
+                key={cloneVoiceValue(o.providerId, o.id)}
+                value={cloneVoiceValue(o.providerId, o.id)}
+                className="text-[11px]"
+              >
+                <span className="flex items-center gap-1.5">
+                  <span className="truncate">{o.name}</span>
+                </span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       )}
 
       <span className="ml-auto shrink-0 font-mono text-[11px] tabular-nums text-muted-foreground/60">

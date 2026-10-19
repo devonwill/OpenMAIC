@@ -21,6 +21,7 @@ import { useTTSPreview } from '@/lib/audio/use-tts-preview';
 import {
   getVoxCPMProviderOptions,
   getVoxCPMVoiceOptions,
+  toCloneVoiceOptions,
   useAllVoiceProfiles,
 } from '@/lib/audio/voxcpm-voices';
 import {
@@ -59,9 +60,16 @@ export function TtsConfigPopover() {
   const setTTSSpeed = useSettingsStore((s) => s.setTTSSpeed);
   const ttsProvidersConfig = useSettingsStore((s) => s.ttsProvidersConfig);
   const setTTSVoice = useSettingsStore((s) => s.setTTSVoice);
+  const useMyCloneVoice = useSettingsStore((s) => s.useMyCloneVoice);
+  const myCloneVoiceId = useSettingsStore((s) => s.myCloneVoiceId);
+  const myCloneVoiceProvider = useSettingsStore((s) => s.myCloneVoiceProvider);
+  const setMyCloneVoice = useSettingsStore((s) => s.setMyCloneVoice);
   const { profiles: voiceProfiles } = useAllVoiceProfiles();
   const voxcpmProfiles = voiceProfiles.filter((profile) => profile.providerId === 'voxcpm-tts');
   const qwenProfiles = voiceProfiles.filter((profile) => profile.providerId === 'qwen-tts');
+  // Clone voices registered on any provider — provider defaulting and the
+  // VoxCPM local-id → wire-id translation live in toCloneVoiceOptions.
+  const cloneProfiles = toCloneVoiceOptions(voiceProfiles);
   const voxcpmBackend = normalizeVoxCPMBackend(
     ttsProvidersConfig['voxcpm-tts']?.providerOptions?.backend,
   );
@@ -235,6 +243,62 @@ export function TtsConfigPopover() {
                 {previewing ? t('toolbar.ttsPreviewing') : t('toolbar.ttsPreview')}
               </button>
             </div>
+
+            {/* Global clone-voice override — one registered clone voice for
+                every AI teacher/narrator (discussion + generated lecture). */}
+            <div className="border-t border-border/40 pt-3 mt-3 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] text-muted-foreground leading-snug">
+                  所有 AI 教师统一使用我的克隆声音
+                </span>
+                <Switch
+                  checked={useMyCloneVoice}
+                  disabled={cloneProfiles.length === 0}
+                  onCheckedChange={(checked) => {
+                    setMyCloneVoice({ useMyCloneVoice: checked });
+                    // First turn-on with no pick yet: default to the most
+                    // recently registered clone.
+                    if (checked && !myCloneVoiceId && cloneProfiles[0]) {
+                      setMyCloneVoice({
+                        myCloneVoiceId: cloneProfiles[0].id,
+                        myCloneVoiceProvider: cloneProfiles[0].providerId,
+                      });
+                    }
+                  }}
+                  className="scale-[0.85] origin-right shrink-0"
+                />
+              </div>
+              {useMyCloneVoice && cloneProfiles.length > 0 && (
+                <Select
+                  value={myCloneVoiceId}
+                  onValueChange={(voiceId) => {
+                    const profile = cloneProfiles.find((p) => p.id === voiceId);
+                    if (!profile) return;
+                    setMyCloneVoice({
+                      myCloneVoiceId: profile.id,
+                      myCloneVoiceProvider: profile.providerId,
+                    });
+                  }}
+                >
+                  <SelectTrigger className="h-7 text-xs w-full">
+                    <SelectValue placeholder="选择克隆声音" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cloneProfiles.map((profile) => (
+                      <SelectItem key={profile.id} value={profile.id} className="text-xs">
+                        {profile.name}（{profile.providerId}）
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              {cloneProfiles.length === 0 && (
+                <p className="text-[11px] text-muted-foreground leading-snug">
+                  尚未注册克隆声音，请先在语音设置中注册
+                </p>
+              )}
+            </div>
+
             <div className="space-y-1">
               <div className="flex items-center justify-between text-[11px] text-muted-foreground">
                 <span>{t('settings.ttsSpeed')}</span>

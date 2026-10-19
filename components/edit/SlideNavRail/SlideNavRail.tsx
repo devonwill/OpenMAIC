@@ -1,3 +1,11 @@
+/**
+ * 本文件：Pro 编辑模式左侧页面导航栏（SlideNavRail）。
+ * 职责：垂直缩略图列表，支持点击切页、拖拽排序、悬停缝隙插入新页、
+ * 复制/删除场景、双击改名，并可拖宽与折叠（宽度/折叠态持久化到设置 store）。
+ * 关键点：拖宽时直接改写 DOM style.width、pointerup 才提交最终宽度，
+ * 避免 React 渲染延迟造成拖拽发涩；删除经回收站捕获 + toast 撤销，
+ * 撤销前校验舞台身份与 index 0 无锚点的回插路径。
+ */
 'use client';
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -47,6 +55,9 @@ const RAIL_MAX_PX = 360;
  * per-row chrome (rejected `EditModeSidebar` pattern). Drag uses an
  * explicit grip handle on the thumb so the whole tile remains
  * click-to-switch.
+ *
+ * 中文要点：宽度、折叠态持久化在 settings store；所有场景类型一视同仁，
+ * 非幻灯片页也可点击、拖拽与删除（删除受「至少留一页」守卫约束）。
  */
 export function SlideNavRail() {
   const { t } = useI18n();
@@ -185,6 +196,7 @@ export function SlideNavRail() {
         .map((id) => byId.get(id))
         .filter((s): s is Scene => Boolean(s));
       if (next.length !== scenes.length) return;
+      // 只重写 order 发生变化的场景，减少无谓的状态对象 churn。
       const rebalanced = next.map((s, i) => (s.order === i + 1 ? s : { ...s, order: i + 1 }));
       setScenes(rebalanced);
     },
@@ -242,6 +254,7 @@ export function SlideNavRail() {
       const source = scenes.find((s) => s.id === sceneId);
       if (!source) return;
       // Hold deck-empty guard at the rail layer; the store doesn't enforce.
+      // 中文要点：守卫放在导航栏层——幻灯片至少留一页、任何类型至少留一页。
       if (source.type === 'slide' && slideCount <= 1) return;
       if (totalScenes <= 1) return;
       const index = scenes.findIndex((s) => s.id === sceneId);
@@ -341,9 +354,9 @@ export function SlideNavRail() {
           onPointerMove={handleResizeMove}
           onPointerUp={handleResizeEnd}
           onPointerCancel={handleResizeEnd}
-          className="group absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize touch-none hover:bg-violet-400/30 dark:hover:bg-violet-500/30 active:bg-violet-500/50 transition-colors"
+          className="group absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize touch-none hover:bg-blue-400/30 dark:hover:bg-blue-500/30 active:bg-blue-500/50 transition-colors"
         >
-          <div className="absolute right-0.5 top-1/2 -translate-y-1/2 w-0.5 h-8 rounded-full bg-gray-300 dark:bg-gray-600 group-hover:bg-violet-400 dark:group-hover:bg-violet-500 transition-colors" />
+          <div className="absolute right-0.5 top-1/2 -translate-y-1/2 w-0.5 h-8 rounded-full bg-gray-300 dark:bg-gray-600 group-hover:bg-blue-400 dark:group-hover:bg-blue-500 transition-colors" />
         </div>
       )}
       {/* Collapse / expand control. Two forms of one toggle (stable testid):
@@ -363,7 +376,7 @@ export function SlideNavRail() {
             'absolute inset-0 z-10 flex items-center justify-center',
             'text-zinc-400/70 dark:text-zinc-500/70',
             'hover:bg-gray-100/80 hover:text-zinc-600 dark:hover:bg-gray-800/80 dark:hover:text-zinc-300',
-            'focus-visible:outline-none focus-visible:bg-gray-100/80 focus-visible:text-zinc-600 focus-visible:ring-1 focus-visible:ring-violet-400/50 dark:focus-visible:bg-gray-800/80 dark:focus-visible:text-zinc-300',
+            'focus-visible:outline-none focus-visible:bg-gray-100/80 focus-visible:text-zinc-600 focus-visible:ring-1 focus-visible:ring-blue-400/50 dark:focus-visible:bg-gray-800/80 dark:focus-visible:text-zinc-300',
             'active:bg-gray-200/90 active:text-zinc-700 dark:active:bg-gray-700/90 dark:active:text-zinc-200',
             'transition-colors duration-150',
           )}
@@ -381,7 +394,7 @@ export function SlideNavRail() {
             'absolute right-0 top-1/2 z-10 flex h-8 w-6 -translate-y-1/2 items-center justify-center rounded-l-md',
             'text-zinc-400/70 dark:text-zinc-500/70',
             'hover:bg-gray-100/80 hover:text-zinc-600 dark:hover:bg-gray-800/80 dark:hover:text-zinc-300',
-            'focus-visible:outline-none focus-visible:bg-gray-100/80 focus-visible:text-zinc-600 focus-visible:ring-1 focus-visible:ring-violet-400/50 dark:focus-visible:bg-gray-800/80 dark:focus-visible:text-zinc-300',
+            'focus-visible:outline-none focus-visible:bg-gray-100/80 focus-visible:text-zinc-600 focus-visible:ring-1 focus-visible:ring-blue-400/50 dark:focus-visible:bg-gray-800/80 dark:focus-visible:text-zinc-300',
             'active:bg-gray-200/90 active:text-zinc-700 dark:active:bg-gray-700/90 dark:active:text-zinc-200',
             'transition-colors duration-150',
           )}

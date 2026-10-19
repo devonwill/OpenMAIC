@@ -1,3 +1,9 @@
+/**
+ * 本文件：编辑态线段元素组件。
+ * 职责：按起止点与线型生成 SVG path，叠加箭头/圆点端点标记，并提供选中交互。
+ * 关键点：可见线之外渲染一条 20px 宽透明命中路径，便于点选细线；
+ *         SVG 宽高不小于 24px，保证端点标记有绘制空间。
+ */
 'use client';
 
 import { useId, useMemo } from 'react';
@@ -16,6 +22,8 @@ export interface LineElementProps {
 /**
  * Line element component
  * Renders SVG lines with optional arrow/dot endpoints
+ *
+ * 中文：虚线/点线 dash 随线宽分档缩放，与描边 hook 的口径保持一致。
  */
 export function LineElement({ elementInfo, selectElement }: LineElementProps) {
   const { shadowStyle } = useElementShadow(elementInfo.shadow);

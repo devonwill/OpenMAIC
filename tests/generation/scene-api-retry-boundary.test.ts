@@ -1,3 +1,4 @@
+import { NextRequest } from 'next/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SceneOutline } from '@/lib/types/generation';
 import { legacyPBLSceneFixture } from '@/tests/fixtures/pbl-v1-scene';
@@ -353,13 +354,15 @@ describe('scene API retry boundary', () => {
 });
 
 function mockRequest(extraBody: Record<string, unknown> = {}) {
-  return {
-    json: async () => ({
+  return new NextRequest('http://localhost/api/generate/scene-content', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
       outline,
       allOutlines: [outline],
       stageId: 'stage-1',
       stageInfo: { name: 'Retry Course' },
       ...extraBody,
     }),
-  } as unknown as Parameters<typeof import('@/app/api/generate/scene-content/route').POST>[0];
+  });
 }

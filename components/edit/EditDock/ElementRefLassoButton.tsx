@@ -1,3 +1,10 @@
+/**
+ * 本文件：元素引用「套索」切换按钮。
+ * 职责：一键进入/退出画布选元素模式，点选的元素进入 composer 的引用胶囊列表；
+ * 按钮上直接显示已选数量。
+ * 关键点：渲染与可用性以「引用草稿持有者」围栏判定（非会话 id、非 agent 归属），
+ * armed 状态下即使归属变化也保持挂载，保证 Esc/再按一次总能退出。
+ */
 'use client';
 
 /**
@@ -51,6 +58,7 @@ import { useWorkbenchStore } from '@/lib/workbench/session-store';
 import { MAX_ELEMENT_REFS } from '@/lib/workbench/element-refs';
 import { clearCuePreview } from '@/components/edit/ActionsBar/cue-preview';
 
+/** 元素引用套索按钮：进入选元素模式并实时显示已引用元素数量。 */
 export function ElementRefLassoButton({ sceneId }: { readonly sceneId: string }) {
   const { t } = useI18n();
   const sessionId = useWorkbenchStore((s) => s.sessionId);
@@ -101,6 +109,8 @@ export function ElementRefLassoButton({ sceneId }: { readonly sceneId: string })
       disarm();
       return;
     }
+    // 三元组（舞台、会话、草稿持有者）齐备才允许武装；
+    // 这里兜底，确保条件不满足时点击不会静默进入半吊子模式。
     if (!armTarget) return;
     // Taking the canvas away from a cue pick: its hover preview (spotlight /
     // laser) is a live effect painted on the slide, and it must not outlive the
@@ -130,7 +140,7 @@ export function ElementRefLassoButton({ sceneId }: { readonly sceneId: string })
       className={cn(
         'inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-colors',
         armed
-          ? 'border-violet-400 bg-violet-500 text-white hover:bg-violet-600'
+          ? 'border-blue-400 bg-blue-500 text-white hover:bg-blue-600'
           : 'border-primary/25 bg-primary/10 text-primary hover:bg-primary/15',
       )}
     >

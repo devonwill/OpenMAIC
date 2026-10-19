@@ -45,7 +45,10 @@
   },
   "home": {
     "slogan": "Generatives Lernen im interaktiven Lernraum mit mehreren KI-Agenten",
-    "greetingWithName": "Hallo, {{name}}"
+    "greetingWithName": "Hallo, {{name}}",
+    "setupLLMFirst": "Please configure a large-model provider in System Settings before using {{feature}}.",
+    "workbenchEntry": "Workbench",
+    "enterClassroom": "classroom generation"
   },
   "toolbar": {
     "pdfParser": "Parser",
@@ -563,6 +566,8 @@
       "title": "Sprechertext",
       "regenAllTts": "Alle Vertonungen neu erstellen",
       "voiceAll": "Alles vertonen",
+      "cloneVoiceSelect": "Klonstimme wählen – „Alles vertonen“ synthisiert alle Sätze damit",
+      "cloneVoiceDefault": "Standardstimme",
       "counts": "Sprechertexte: {{speech}} · Aktionen: {{cue}}",
       "panLeft": "Nach links verschieben",
       "panRight": "Nach rechts verschieben",
@@ -1167,6 +1172,12 @@
     "webSearching": "Websuche",
     "webSearchingDesc": "Das Web wird nach aktuellen Informationen durchsucht",
     "webSearchFailed": "Websuche fehlgeschlagen",
+    "citationsTitle": "Quellen auf dieser Seite",
+    "citationsValid": "{{count}} geprüft",
+    "citationsInvalid": "{{count}} ungültig",
+    "citationReasonNotFound": "Nicht in der Wissensbasis gefunden (wahrscheinlich vom Modell erfunden)",
+    "citationReasonNotReviewed": "Quellbibliothek nicht geprüft",
+    "citationReasonOutOfScope": "Außerhalb der ausgewählten Wissensbibliotheken",
     "outlinesReadyCount": "Abschnitte bereit: {{ready}} / {{total}}",
     "jumpToBlankTitle": "Zu einem Abschnitt ohne Titel springen",
     "analyzingMediaMaterial": "Audio- und Videomaterial wird analysiert"
@@ -1905,7 +1916,7 @@
       "download": "Herunterladen",
       "detailFailed": "Die Skill-Details konnten nicht geladen werden",
       "contentLabel": "Inhalt",
-      "builtinDetailNote": "Dieser Skill ist in OpenMAIC enthalten. Lade ihn herunter, um ihn in einen anderen Agenten-Arbeitsbereich zu importieren.",
+      "builtinDetailNote": "Dieser Skill ist in OpenRobotics enthalten. Lade ihn herunter, um ihn in einen anderen Agenten-Arbeitsbereich zu importieren.",
       "upload": "Hochladen",
       "uploading": "Wird hochgeladen…",
       "uploadFailed": "Der Skill konnte nicht hochgeladen werden. Prüfe die Datei und versuche es erneut.",
@@ -2062,7 +2073,26 @@
     "badgeEnter": "Pro mode",
     "badgeExit": "Back to classic",
     "launchPlaceholder": "Describe the learning experience you want to create",
-    "launchSend": "Start build"
+    "launchSend": "Start build",
+    "config": "Schnelleinstellungen",
+    "configModel": "Modell",
+    "configModelScope": "Gilt für Szenengenerierung, Chat-Sitzungen und Quizzes; das Antwortmodell des Arbeitsbereichs ist serverseitig festgelegt.",
+    "configNoModelProvider": "Keine konfigurierten Modellanbieter — in den Einstellungen hinzufügen.",
+    "configVoice": "Stimme",
+    "knowledge": "Wissensbasis",
+    "knowledgeLoading": "Wird geladen …",
+    "knowledgeLoadFailed": "Laden fehlgeschlagen — aktivieren Sie zuerst die Daten auf der Wissenseite.",
+    "knowledgeEmpty": "Noch keine geprüften Wissensbasen — laden Sie eine auf der Wissenseite hoch und prüfen Sie sie.",
+    "knowledgeKindCode": "Code",
+    "knowledgeKindGraph": "Graph",
+    "knowledgeKindPaper": "Paper",
+    "knowledgeQuota": "Zitatkontingent (Evidenzanteil)",
+    "knowledgeQuotaSummary": "Lokal {{local}}% · Web {{web}}% · Modell {{model}}%",
+    "knowledgeQuotaLocal": "Lokal",
+    "knowledgeQuotaWeb": "Web",
+    "configCloneUse": "Meine Klonstimme für alle KI-Lehrer verwenden",
+    "configCloneSelect": "Klonstimme auswählen",
+    "configCloneEmpty": "Noch keine Klonstimme registriert — bitte zuerst in den Spracheinstellungen registrieren"
   },
   "workbench": {
     "tool": {

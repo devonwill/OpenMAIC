@@ -7,18 +7,18 @@ import { anonymousCookieSecure } from '@/lib/server/agent-runtime/owner';
 
 export { SESSION_MAX_AGE_SECONDS };
 
-// 与 store 的 UserRecord 字段口径一致（id/email/role/displayName/phone），
+// 与 store 的 UserRecord 字段口径一致（id/email/role/displayName/phone/avatar），
 // 对外只暴露视图对象，不把 passwordHash 泄漏到 API 响应里。
 export interface AuthUserView {
   id: string; email: string; role: 'teacher' | 'student';
-  displayName: string; phone: string | null;
+  displayName: string; phone: string | null; avatar: string | null;
 }
 
 export function userView(
   id: string, email: string, role: 'teacher' | 'student',
-  displayName: string, phone: string | null,
+  displayName: string, phone: string | null, avatar: string | null,
 ): AuthUserView {
-  return { id, email, role, displayName, phone };
+  return { id, email, role, displayName, phone, avatar };
 }
 
 /**

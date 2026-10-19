@@ -43,6 +43,8 @@ import type { CleanupSource } from '@/lib/playback/auto-resume';
 import { nanoid } from 'nanoid';
 import type { BaiduSubSources, WebSearchProviderId } from '@/lib/web-search/types';
 import { getPersistenceRequestHeaders } from '@/lib/persistence/bootstrap';
+import type { KnowledgeSelection } from '@/lib/knowledge/quota';
+import { readKnowledgeSelection } from '@/lib/knowledge/selection';
 import { refreshWhiteboardRuntimeProjection } from '@/lib/whiteboard/runtime/browser-projection';
 
 const log = createLogger('ChatSessions');
@@ -163,6 +165,8 @@ export type ChatRequestTemplate = {
   thinkingConfig?: ThinkingConfig;
   directorState?: DirectorState;
   piSessionBoundary?: PiSessionBoundaryContext;
+  /** 图1 勾选的知识库：随请求下发，服务端按此圈定课堂检索范围。 */
+  knowledge?: KnowledgeSelection;
   webSearchProviderId?: WebSearchProviderId;
   webSearchApiKey?: string;
   webSearchBaseUrl?: string;
@@ -1274,10 +1278,13 @@ export function useChatSessions(options: UseChatSessionsOptions = {}) {
         // request needs the snapshot built here — /api/chat/pi rejects bodies
         // without storeState.
         const storeState = await buildFreshAgentLoopStoreState();
+        // 图1 勾选的知识库：讨论环节与生成共用同一份勾选（localStorage），
+        // 未勾选时服务端保持全库检索的旧行为。
+        const knowledge = readKnowledgeSelection();
         const firstRequestContext = getFirstPiRequestContext(sessionId);
         const piRequestTemplate = firstRequestContext
-          ? { ...requestTemplate, storeState, piSessionBoundary: firstRequestContext }
-          : { ...requestTemplate, storeState };
+          ? { ...requestTemplate, knowledge, storeState, piSessionBoundary: firstRequestContext }
+          : { ...requestTemplate, knowledge, storeState };
         const piRequestWithWebSearch = withPiWebSearchSettings(
           piRequestTemplate,
           useSettingsStore.getState(),
@@ -1321,6 +1328,7 @@ export function useChatSessions(options: UseChatSessionsOptions = {}) {
           model: requestTemplate.model,
           providerType: requestTemplate.providerType,
           thinkingConfig: requestTemplate.thinkingConfig,
+          knowledge: readKnowledgeSelection(),
         },
         {
           getStoreState: buildFreshAgentLoopStoreState,

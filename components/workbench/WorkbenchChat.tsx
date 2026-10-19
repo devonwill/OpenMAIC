@@ -80,7 +80,12 @@ import {
   useComposerMaterials,
   type AgentSkillInfo,
 } from './compose-extras';
-import { insertSkillHandle, seedSlashQuery } from '@/lib/workbench/composer-skills';
+import { ComposeConfigButton } from './compose-config';
+import { KnowledgeButton } from './knowledge-button';
+import { InteractiveModeButton } from '@/components/generation/interactive-mode-button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { insertSkillHandle, seedSlashQuery, skillHandleName } from '@/lib/workbench/composer-skills';
+import { composerTokens } from '@/lib/workbench/composer-tokens';
 import { useSkillHandleBackspace } from './use-skill-handle-backspace';
 import { resolveComposerMenu } from '@/lib/workbench/composer-menus';
 import {
@@ -107,6 +112,14 @@ import { settleSentCourseRefs } from '@/lib/workbench/course-ref-send-result';
 
 const NO_ELEMENT_REFS: ElementRef[] = [];
 const NO_COURSE_REFS: CourseRef[] = [];
+
+/** 这条草稿里是否已写着某个技能句柄 —— 深度交互的补写只补缺、不重复。 */
+function hasSkillHandle(text: string, name: string): boolean {
+  for (const token of composerTokens(text)) {
+    if (skillHandleName(token.text) === name) return true;
+  }
+  return false;
+}
 
 export function WorkbenchChat({
   hosted = false,
@@ -595,6 +608,24 @@ export function WorkbenchChat({
   });
 
   /**
+   * 深度交互（deep-interactive skill）开关 —— 与首页同一个 localStorage key，
+   * 两端任一侧改动即互通。读取放在 effect 里：SSR 首屏与客户端首屏取值时机
+   * 一致，不会因水合时本地存储已有值而告警。
+   */
+  const [deepInteractive, setDeepInteractive] = useState(false);
+  useEffect(() => {
+    setDeepInteractive(window.localStorage.getItem('interactiveModeEnabled') === 'true');
+  }, []);
+  const toggleDeepInteractive = useCallback((next: boolean) => {
+    setDeepInteractive(next);
+    try {
+      window.localStorage.setItem('interactiveModeEnabled', String(next));
+    } catch {
+      // 存储不可用（隐私模式）时仅本次会话内生效，不阻断交互。
+    }
+  }, []);
+
+  /**
    * The one way a user message leaves this surface — typed into the composer or
    * clicked on an `ask_user` question card. Everything that makes a send a send
    * lives here: the optimistic STOP flip (the fold's status cannot move until
@@ -619,6 +650,17 @@ export function WorkbenchChat({
       if (busy) {
         return { accepted: false, elementRefsAccepted: false, courseRefsAccepted: false };
       }
+      /**
+       * 深度交互不是接口新字段，而是消息文本里的 `/deep-interactive` 句柄：
+       * 服务端从首条消息的 leading handle 冻结会话 skillId，之后每一轮再按
+       * 文本中出现的句柄预载技能 —— 所以开关开时前置一句柄即可对新会话与
+       * 已挂载会话同时生效，关闭后后续消息不带句柄就不再预载。草稿不回写，
+       * 用户看到的始终是自己敲的字，开关本身才是权威。
+       */
+      const outgoingText =
+        deepInteractive && text.trim().length > 0 && !hasSkillHandle(text, 'deep-interactive')
+          ? `/deep-interactive ${text}`
+          : text;
       setBusy(true);
       // Optimistic: flip the composer to STOP right now. The fold's status only
       // moves once the runner claims the requeued row (`session_resumed`) — up
@@ -635,10 +677,10 @@ export function WorkbenchChat({
         const result = sessionId
           ? {
               accepted: true,
-              ...(await postWorkbenchMessage(sessionId, text, attachments, refs, courses)),
+              ...(await postWorkbenchMessage(sessionId, outgoingText, attachments, refs, courses)),
             }
           : await draftConversation!.start({
-              text,
+              text: outgoingText,
               materials: attachments,
               elementRefs: refs,
               courseRefs: courses,
@@ -662,7 +704,7 @@ export function WorkbenchChat({
         setBusy(false);
       }
     },
-    [busy, draftConversation, sessionId, status, t],
+    [busy, deepInteractive, draftConversation, sessionId, status, t],
   );
 
   /**
@@ -1001,6 +1043,33 @@ export function WorkbenchChat({
                     label={t('proMode.loadSkill')}
                     onClick={openSkillMenu}
                   />
+                  {/* Knowledge and interactive mode mirror the homepage
+                      controls: the selection is the shared localStorage
+                      `knowledgeSelection` the chat retrieval reads anyway, and
+                      the switch is the same `interactiveModeEnabled` the
+                      homepage writes. Both stay enabled like config — checking
+                      a setting must not wait for the composer to be sendable. */}
+                  <KnowledgeButton />
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <InteractiveModeButton
+                        pressed={deepInteractive}
+                        label={t('toolbar.interactiveModeLabel')}
+                        onPressedChange={toggleDeepInteractive}
+                        data-testid="workbench-interactive-mode"
+                        data-mention-keep-open=""
+                        className="px-2"
+                      />
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="text-xs">
+                      {t('toolbar.interactiveModeHint')}
+                    </TooltipContent>
+                  </Tooltip>
+                  {/* Config follows the three attachments: it changes what the
+                      message is answered WITH (model + voice) instead of what
+                      it carries. Always enabled — checking or switching
+                      settings must not wait for the composer to be sendable. */}
+                  <ComposeConfigButton />
                 </div>
                 <div className={styles.composer.actionsRow}>
                   {live ? (

@@ -1,3 +1,10 @@
+/**
+ * 本文件：16:9 画布容器组件。
+ * 职责：按 contain（完整适配、留黑边）或 fill-width（撑满宽度、裁剪高度）
+ * 两种模式，测量宿主尺寸并计算舞台盒子的宽高。
+ * 关键点：尺寸测量靠 ResizeObserver + 有界 settle 窗口 + 慢速兜底定时器
+ * 三重保障，只在尺寸真正变化时发布状态，避免无谓重渲染。
+ */
 'use client';
 
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
@@ -50,6 +57,7 @@ const LAYOUT_PROPERTIES = new Set([
   'left',
 ]);
 
+/** 按固定宽高比计算舞台盒子尺寸的容器；尺寸未测得前以 100% 兜底渲染。 */
 export function ContainBox({
   ratio = CLASSROOM_ASPECT_RATIO,
   fit = 'contain',
